@@ -1,0 +1,20 @@
+# Environment file — contains API keys and secrets
+.env
+
+# SQLite database — contains user passwords (hashed)
+*.db
+
+# Python cache
+__pycache__/
+*.pyc
+
+# User uploaded documents
+uploads/
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
