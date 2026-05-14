@@ -1,0 +1,78 @@
+/* ═══════════════════════ Summarify Pro — Custom Styles ═══════════════════════ */
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }
+
+/* Dropzone highlight */
+.dropzone.drag-over {
+    border-color: #3b82f6 !important;
+    background-color: rgba(59,130,246,0.05) !important;
+}
+
+/* Tab transition */
+.tab-content { transition: opacity 0.2s ease; }
+.tab-content.hidden { display: none; }
+
+/* Modal */
+.modal { transition: opacity 0.3s ease; }
+.modal.hidden { display: none; }
+
+/* Toast fade out */
+#toast { transition: opacity 0.3s ease, transform 0.3s ease; }
+#toast.show { opacity: 1; transform: translateY(0); }
+#toast.hide { opacity: 0; transform: translateY(12px); }
+
+/* AI buttons */
+.ai-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Prose adjustments */
+.prose { font-size: 0.9375rem; }
+.prose strong { color: #1e293b; }
+
+/* Navbar shadow on scroll */
+#navbar.scrolled { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+/* Skeleton pulse for loading states */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 0.5rem;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+/* Selection color */
+::selection { background-color: #bfdbfe; color: #1e40af; }
+
+/* Focus visible */
+:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
