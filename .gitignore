@@ -24,6 +24,9 @@ venv/
 .venv/
 env/
 
+# Documentation (exclude from git)
+README.md
+
 # Environment backup files
 *.env.bak
 .env.*
