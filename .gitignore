@@ -18,3 +18,14 @@ uploads/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Python virtual environments
+venv/
+.venv/
+env/
+
+# Environment backup files
+*.env.bak
+.env.*
+!env.example
+!.env.example

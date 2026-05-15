@@ -76,3 +76,59 @@ html { scroll-behavior: smooth; }
 
 /* Focus visible */
 :focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+
+/* ═══════════════════════ Mobile Responsive ═══════════════════════ */
+@media (max-width: 640px) {
+    /* Navbar */
+    #nav-auth .text-sm { font-size: 0.75rem; }
+    #nav-auth button { padding-left: 0.5rem; padding-right: 0.5rem; }
+    #nav-user .text-sm { font-size: 0.7rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #user-email { font-size: 0.7rem; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #usage-badge { font-size: 0.65rem; padding: 0.25rem 0.6rem; }
+    nav .font-bold { font-size: 1rem; }
+
+    /* Hero */
+    h1 { font-size: 2rem !important; line-height: 1.2 !important; }
+    .hero-subtitle { font-size: 0.95rem; }
+
+    /* Tabs */
+    .tab-btn { font-size: 0.75rem; padding: 0.5rem 0.5rem; }
+    .tab-btn svg { width: 0.875rem; height: 0.875rem; }
+
+    /* Dropzone */
+    .dropzone { padding: 1.5rem 1rem; }
+    .dropzone .w-14 { width: 2.5rem; height: 2.5rem; }
+    .dropzone .w-7 { width: 1.25rem; height: 1.25rem; }
+
+    /* URL input */
+    #tab-url .flex { flex-direction: column; }
+    #url-parse-btn { width: 100%; justify-content: center; }
+
+    /* AI actions */
+    .ai-btn { width: 100%; justify-content: center; font-size: 0.8rem; }
+    #parsed-section .flex-wrap { flex-direction: column; }
+    #parsed-section .flex.gap-2 > div { width: 100%; }
+
+    /* Result section */
+    #result-section .p-8, #parsed-section .p-8 { padding: 1rem; }
+    #result-content { max-height: 20rem; }
+
+    /* Cards */
+    .grid-cols-1.md\:grid-cols-3,
+    .grid-cols-1.md\:grid-cols-2 { gap: 1rem; }
+
+    /* Modal */
+    .modal .max-w-sm { max-width: 95vw; }
+    .modal .p-8 { padding: 1.25rem; }
+
+    /* Footer */
+    footer .flex { flex-direction: column; text-align: center; gap: 0.5rem; }
+    footer .flex-nowrap { flex-wrap: wrap; justify-content: center; }
+
+    /* Toast */
+    #toast { left: 1rem; right: 1rem; bottom: 1rem; max-width: none; }
+
+    /* Features section */
+    section.py-20 { padding-top: 3rem; padding-bottom: 3rem; }
+    section.pb-20 { padding-bottom: 3rem; }
+}

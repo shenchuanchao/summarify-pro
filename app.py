@@ -2,15 +2,22 @@
 Summarify Pro — Backend API Server
 AI Document Summarizer — International Edition
 Powered by Zhipu AI GLM-4-Flash
+Stripe-powered Premium subscription
 """
 
 import os
 import re
-import sqlite3
 import hashlib
 import secrets
+import uuid
 import datetime
+import ipaddress
+import socket
 from functools import wraps
+from collections import defaultdict
+from threading import Lock
+import time
+from urllib.parse import urlparse
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -21,55 +28,85 @@ from docx import Document
 from bs4 import BeautifulSoup
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+import bcrypt
 
-load_dotenv()
+# Supabase
+from supabase import create_client, Client
+
+# Stripe
+import stripe
+
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 # ── App Initialization ────────────────────────────────────────────────
 
 app = Flask(__name__, static_folder='static', static_url_path='')
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ORIGINS', '').strip()
+if CORS_ALLOWED_ORIGINS:
+    _origins = [o.strip() for o in CORS_ALLOWED_ORIGINS.split(',') if o.strip()]
+    CORS(app, resources={r"/api/*": {"origins": _origins}})
+else:
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(32))
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-
-ZHIPU_API_KEY = os.getenv('ZHIPU_API_KEY', '')
-ZHIPU_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
-DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summarify.db')
+app.config['UPLOAD_FOLDER'] = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'uploads'
+)
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# ── Database ────────────────────────────────────────────────────────────
+# ── AI Config (from .env) ─────────────────────────────────────────────
 
-def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+AI_PROVIDER    = os.getenv('AI_PROVIDER', 'zhipu')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+OPENAI_BASE_URL = os.getenv('OPENAI_BASE_URL', 'https://open.bigmodel.cn/api/paas/v4')
+OPENAI_MODEL   = os.getenv('OPENAI_MODEL', 'glm-4-flash')
 
-def init_db():
-    conn = get_db()
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            plan TEXT DEFAULT 'free',
-            daily_usage_count INTEGER DEFAULT 0,
-            last_usage_date TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
-        )
-    ''')
-    conn.commit()
-    conn.close()
+# ── Supabase Client ───────────────────────────────────────────────────
 
-init_db()
+SUPABASE_URL = os.getenv('PUBLIC_SUPABASE_URL', '')
+SUPABASE_KEY = os.getenv(
+    'SUPABASE_SERVICE_ROLE_KEY'
+) or os.getenv('PUBLIC_SUPABASE_ANON_KEY', '')
 
-# ── Auth Utilities ──────────────────────────────────────────────────────
+_supabase_client: Client | None = None
+
+def get_supabase() -> Client:
+    """Lazy-initialized Supabase client."""
+    global _supabase_client
+    if _supabase_client is None:
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            raise RuntimeError(
+                'Supabase not configured. Set PUBLIC_SUPABASE_URL and '
+                'SUPABASE_SERVICE_ROLE_KEY (or PUBLIC_SUPABASE_ANON_KEY) in .env.'
+            )
+        _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    return _supabase_client
+
+# ── Stripe Client ─────────────────────────────────────────────────────
+
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+STRIPE_PRICE_ID = os.getenv('STRIPE_PRICE_ID', '')
+
+if STRIPE_SECRET_KEY:
+    stripe.api_key = STRIPE_SECRET_KEY
+
+# ── Auth Utilities ─────────────────────────────────────────────────────
 
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Hash password with bcrypt."""
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
-def generate_token(user_id: int) -> str:
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verify password against hash. Supports both bcrypt and legacy SHA-256."""
+    if password_hash.startswith('$2b$') or password_hash.startswith('$2a$'):
+        return bcrypt.checkpw(password.encode(), password_hash.encode())
+    # Legacy SHA-256 fallback
+    return hashlib.sha256(password.encode()).hexdigest() == password_hash
+
+def generate_token(user_id: str) -> str:
     payload = {
         'user_id': user_id,
         'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
@@ -79,17 +116,15 @@ def generate_token(user_id: int) -> str:
 def verify_token(token: str):
     try:
         payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-        return payload['user_id']
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
+        return payload.get('user_id')
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         return None
 
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth_header = request.headers.get('Authorization', '')
-        token = auth_header.replace('Bearer ', '')
+        token = auth_header.replace('Bearer ', '').strip()
         if not token:
             return jsonify({'error': 'Authorization header required'}), 401
         user_id = verify_token(token)
@@ -98,75 +133,105 @@ def require_auth(f):
         return f(user_id, *args, **kwargs)
     return decorated
 
+# ── Rate Limiter (in-memory IP-based) ──────────────────────────────
+
+_rate_limits: dict = defaultdict(list)
+_rate_lock = Lock()
+
+def rate_limit(max_requests: int = 10, window_seconds: int = 60):
+    """Limit requests per IP within a time window."""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            ip = request.remote_addr or 'unknown'
+            now = time.time()
+            with _rate_lock:
+                timestamps = _rate_limits[ip]
+                timestamps[:] = [t for t in timestamps if now - t < window_seconds]
+                if len(timestamps) >= max_requests:
+                    wait = int(window_seconds - (now - timestamps[0]))
+                    return jsonify({
+                        'error': f'Too many requests. Please wait {wait} seconds.'
+                    }), 429
+                timestamps.append(now)
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
 # ── Rate Limiting ───────────────────────────────────────────────────────
 
-def check_daily_usage(user_id: int):
-    """Returns (allowed: bool, remaining: int or None for unlimited)."""
-    conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+def check_daily_usage(user_id: str):
+    """
+    Returns (allowed: bool, remaining: int or None for unlimited).
+    Uses Supabase to query and update the user's daily usage count.
+    """
+    sb = get_supabase()
 
-    if not user:
-        conn.close()
+    res = sb.table('users').select('*').eq('id', user_id).execute()
+    users = res.data or []
+    if not users:
         return False, 0
 
-    if user['plan'] == 'premium':
-        conn.close()
+    user = users[0]
+
+    if user.get('plan') == 'premium':
         return True, None  # None = unlimited
 
     today = datetime.datetime.now().strftime('%Y-%m-%d')
-    last_date = (user['last_usage_date'] or '')
+    last_date = (user.get('last_usage_date') or '')
 
     if last_date != today:
-        # New day — reset counter
-        conn.execute(
-            'UPDATE users SET daily_usage_count = 1, last_usage_date = ? WHERE id = ?',
-            (today, user_id)
-        )
-        conn.commit()
-        conn.close()
-        return True, 2  # 2 remaining (just used 1)
+        sb.table('users').update({
+            'daily_usage_count': 1,
+            'last_usage_date': today
+        }).eq('id', user_id).execute()
+        return True, 9
 
-    if user['daily_usage_count'] < 3:
+    if user['daily_usage_count'] < 10:
         new_count = user['daily_usage_count'] + 1
-        conn.execute('UPDATE users SET daily_usage_count = ? WHERE id = ?', (new_count, user_id))
-        conn.commit()
-        remaining = 3 - new_count
-        conn.close()
+        sb.table('users').update(
+            {'daily_usage_count': new_count}
+        ).eq('id', user_id).execute()
+        remaining = 10 - new_count
         return True, remaining
 
-    conn.close()
     return False, 0
 
-# ── Zhipu AI Client ────────────────────────────────────────────────────
+# ── AI Client ──────────────────────────────────────────────────────────
 
-def call_zhipu_ai(messages: list, temperature: float = 0.5, max_tokens: int = 4096):
-    if not ZHIPU_API_KEY:
-        return None, "ZHIPU_API_KEY not configured — set it in your .env file"
+def call_ai(messages: list, temperature: float = 0.5, max_tokens: int = 4096):
+    if not OPENAI_API_KEY:
+        return None, 'AI provider API key not configured — set OPENAI_API_KEY in your .env file'
 
     headers = {
-        'Authorization': f'Bearer {ZHIPU_API_KEY}',
+        'Authorization': f'Bearer {OPENAI_API_KEY}',
         'Content-Type': 'application/json'
     }
     payload = {
-        'model': 'glm-4-flash',
+        'model': OPENAI_MODEL,
         'messages': messages,
         'temperature': temperature,
         'max_tokens': max_tokens
     }
 
     try:
-        resp = requests.post(ZHIPU_API_URL, json=payload, headers=headers, timeout=120)
+        resp = requests.post(
+            f'{OPENAI_BASE_URL}/chat/completions',
+            json=payload,
+            headers=headers,
+            timeout=180
+        )
         data = resp.json()
         if 'choices' in data and len(data['choices']) > 0:
             return data['choices'][0]['message']['content'], None
         err = data.get('error', {})
         return None, err.get('message', f'API error (HTTP {resp.status_code})')
     except requests.exceptions.Timeout:
-        return None, 'Request timed out after 120 seconds'
+        return None, 'Request timed out after 180 seconds — try shorter text or use summarize first'
     except requests.exceptions.ConnectionError:
-        return None, 'Cannot connect to Zhipu AI API — check your network'
+        return None, 'Cannot connect to AI API — check OPENAI_BASE_URL in .env'
     except Exception as e:
-        return None, str(e)
+        return None, f'Unexpected error: {str(e)}'
 
 # ── Text Extractors ────────────────────────────────────────────────────
 
@@ -186,17 +251,39 @@ def extract_docx_text(filepath: str) -> str:
     return '\n'.join(paragraphs).strip()
 
 def extract_url_text(url: str) -> str:
+    # SSRF protection: block private/internal IP addresses
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+    if hostname:
+        try:
+            resolved = socket.gethostbyname(hostname)
+            ip = ipaddress.ip_address(resolved)
+            private_ranges = [
+                ipaddress.ip_network('10.0.0.0/8'),
+                ipaddress.ip_network('172.16.0.0/12'),
+                ipaddress.ip_network('192.168.0.0/16'),
+                ipaddress.ip_network('127.0.0.0/8'),
+                ipaddress.ip_network('169.254.0.0/16'),
+                ipaddress.ip_network('0.0.0.0/8'),
+                ipaddress.ip_network('fc00::/7'),
+                ipaddress.ip_network('fe80::/10'),
+                ipaddress.ip_network('::1/128'),
+            ]
+            if any(ip in net for net in private_ranges):
+                raise ValueError('Access to private/internal networks is not allowed')
+        except (socket.gaierror, ValueError) as e:
+            if 'private' in str(e) or 'internal' in str(e):
+                raise
+
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                       '(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
     }
     resp = requests.get(url, headers=headers, timeout=30)
     resp.raise_for_status()
-
     soup = BeautifulSoup(resp.text, 'html.parser')
     for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe', 'noscript']):
         tag.decompose()
-
     text = soup.get_text(separator='\n')
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     return '\n'.join(lines)[:30000]
@@ -210,6 +297,7 @@ def index():
 # ── Auth Endpoints ─────────────────────────────────────────────────────
 
 @app.route('/api/user/register', methods=['POST'])
+@rate_limit(max_requests=10, window_seconds=60)
 def register():
     data = request.get_json(silent=True) or {}
     email = (data.get('email') or '').strip().lower()
@@ -222,29 +310,43 @@ def register():
     if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
         return jsonify({'error': 'Invalid email format'}), 400
 
-    conn = get_db()
-    existing = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
-    if existing:
-        conn.close()
+    sb = get_supabase()
+
+    existing = sb.table('users').select('id,email').eq('email', email).execute()
+    if existing.data:
         return jsonify({'error': 'Email already registered'}), 409
 
     password_hash = hash_password(password)
-    cursor = conn.execute(
-        'INSERT INTO users (email, password_hash) VALUES (?, ?)',
-        (email, password_hash)
-    )
-    user_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
 
-    token = generate_token(user_id)
+    try:
+        insert_res = sb.table('users').insert({
+            'email': email,
+            'password_hash': password_hash,
+            'plan': 'free',
+            'daily_usage_count': 0,
+            'last_usage_date': None
+        }).execute()
+    except Exception as e:
+        return jsonify({'error': f'Failed to create user: {str(e)}'}), 500
+
+    if not insert_res.data:
+        return jsonify({'error': 'Failed to create user'}), 500
+
+    new_user = insert_res.data[0]
+    token = generate_token(new_user['id'])
+
     return jsonify({
         'token': token,
-        'user': {'id': user_id, 'email': email, 'plan': 'free'}
+        'user': {
+            'id': new_user['id'],
+            'email': new_user['email'],
+            'plan': new_user.get('plan', 'free')
+        }
     })
 
 
 @app.route('/api/user/login', methods=['POST'])
+@rate_limit(max_requests=10, window_seconds=60)
 def login():
     data = request.get_json(silent=True) or {}
     email = (data.get('email') or '').strip().lower()
@@ -253,20 +355,32 @@ def login():
     if not email or not password:
         return jsonify({'error': 'Email and password are required'}), 400
 
-    conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
-    conn.close()
+    sb = get_supabase()
 
-    if not user or user['password_hash'] != hash_password(password):
+    res = sb.table('users').select('*').eq('email', email).execute()
+    user_data = res.data
+
+    if not user_data:
         return jsonify({'error': 'Invalid email or password'}), 401
 
+    user = user_data[0]
+
+    if not verify_password(password, user['password_hash']):
+        return jsonify({'error': 'Invalid email or password'}), 401
+
+    # Auto-migrate: upgrade SHA-256 hash to bcrypt on successful login
+    if not user['password_hash'].startswith('$2b$') and not user['password_hash'].startswith('$2a$'):
+        new_hash = hash_password(password)
+        sb.table('users').update({'password_hash': new_hash}).eq('id', user['id']).execute()
+
     token = generate_token(user['id'])
+
     return jsonify({
         'token': token,
         'user': {
             'id': user['id'],
             'email': user['email'],
-            'plan': user['plan']
+            'plan': user.get('plan', 'free')
         }
     })
 
@@ -274,30 +388,174 @@ def login():
 @app.route('/api/user/usage', methods=['GET'])
 @require_auth
 def get_usage(user_id):
-    conn = get_db()
-    user = conn.execute(
-        'SELECT plan, daily_usage_count, last_usage_date FROM users WHERE id = ?',
-        (user_id,)
-    ).fetchone()
-    conn.close()
+    sb = get_supabase()
+    res = sb.table('users').select(
+        'plan, daily_usage_count, last_usage_date'
+    ).eq('id', user_id).execute()
 
+    if not res.data:
+        return jsonify({'error': 'User not found'}), 404
+
+    user = res.data[0]
     today = datetime.datetime.now().strftime('%Y-%m-%d')
 
     if user['plan'] == 'premium':
-        return jsonify({'plan': 'premium', 'daily_limit': None, 'used_today': 0, 'remaining': None})
+        return jsonify({
+            'plan': 'premium',
+            'daily_limit': None,
+            'used_today': 0,
+            'remaining': None
+        })
 
-    if user['last_usage_date'] != today:
-        used, remaining = 0, 3
+    if user.get('last_usage_date') != today:
+        used, remaining = 0, 10
     else:
-        used = user['daily_usage_count']
-        remaining = max(0, 3 - used)
+        used = user.get('daily_usage_count', 0)
+        remaining = max(0, 10 - used)
 
     return jsonify({
         'plan': 'free',
-        'daily_limit': 3,
+        'daily_limit': 10,
         'used_today': used,
         'remaining': remaining
     })
+
+
+# ── Stripe Endpoints ───────────────────────────────────────────────────
+
+@app.route('/api/stripe/create-checkout-session', methods=['POST'])
+@require_auth
+def create_checkout_session(user_id):
+    """Create a Stripe Checkout session for the user to subscribe."""
+    if not STRIPE_SECRET_KEY:
+        return jsonify({'error': 'Stripe not configured on server'}), 500
+    if not STRIPE_PRICE_ID:
+        return jsonify({'error': 'Stripe price ID not configured'}), 500
+
+    sb = get_supabase()
+    res = sb.table('users').select('*').eq('id', user_id).execute()
+    if not res.data:
+        return jsonify({'error': 'User not found'}), 404
+
+    user = res.data[0]
+    email = user['email']
+
+    # Get or create Stripe customer
+    customer_id = None
+    try:
+        customer = stripe.Customer.create(email=email)
+        customer_id = customer.id
+    except Exception as e:
+        return jsonify({'error': f'Failed to create Stripe customer: {str(e)}'}), 500
+
+    # Determine success/cancel URLs
+    origin = request.headers.get('Origin', 'http://localhost:5000')
+    success_url = f'{origin}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}'
+    cancel_url = f'{origin}/?checkout=cancelled'
+
+    try:
+        session = stripe.checkout.Session.create(
+            customer=customer_id,
+            payment_method_types=['card'],
+            line_items=[{
+                'price': STRIPE_PRICE_ID,
+                'quantity': 1
+            }],
+            mode='payment',  # One-time payment for lifetime access
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                'user_id': user_id
+            }
+        )
+        return jsonify({
+            'checkout_url': session.url,
+            'session_id': session.id
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to create checkout session: {str(e)}'}), 500
+
+
+@app.route('/api/stripe/verify-session', methods=['GET'])
+@require_auth
+def verify_session(user_id):
+    """Verify a Stripe Checkout session and activate premium."""
+    session_id = request.args.get('session_id', '').strip()
+    if not session_id:
+        return jsonify({'error': 'session_id is required'}), 400
+
+    if not STRIPE_SECRET_KEY:
+        return jsonify({'error': 'Stripe not configured'}), 500
+
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except Exception as e:
+        return jsonify({'error': f'Failed to verify session: {str(e)}'}), 500
+
+    if session.payment_status != 'paid':
+        return jsonify({'error': 'Payment not completed', 'status': session.payment_status}), 400
+
+    # Verify this session belongs to this user
+    if session.metadata.get('user_id') != user_id:
+        return jsonify({'error': 'Session mismatch'}), 403
+
+    # Activate premium
+    sb = get_supabase()
+    sb.table('users').update({
+        'plan': 'premium'
+    }).eq('id', user_id).execute()
+
+    return jsonify({
+        'success': True,
+        'plan': 'premium'
+    })
+
+
+@app.route('/api/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    """Handle Stripe webhook events."""
+    if not STRIPE_WEBHOOK_SECRET:
+        return jsonify({'error': 'Webhook not configured'}), 500
+
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature', '')
+    event = None
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError:
+        return jsonify({'error': 'Invalid payload'}), 400
+    except stripe.error.SignatureVerificationError:
+        return jsonify({'error': 'Invalid signature'}), 400
+
+    event_type = event['type']
+
+    if event_type == 'checkout.session.completed':
+        session = event['data']['object']
+        user_id = session.metadata.get('user_id')
+        if user_id and session.payment_status == 'paid':
+            sb = get_supabase()
+            sb.table('users').update({
+                'plan': 'premium'
+            }).eq('id', user_id).execute()
+
+    elif event_type == 'payment_intent.payment_failed':
+        # Handle failed payment
+        pass
+
+    return jsonify({'received': True})
+
+
+@app.route('/api/stripe/get-status', methods=['GET'])
+def get_stripe_status():
+    """Get Stripe configuration status for the frontend."""
+    return jsonify({
+        'configured': bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID),
+        'has_webhook': bool(STRIPE_WEBHOOK_SECRET)
+    })
+
 
 # ── Parse Endpoints ────────────────────────────────────────────────────
 
@@ -307,7 +565,7 @@ def parse_pdf(user_id):
     allowed, remaining = check_daily_usage(user_id)
     if not allowed:
         return jsonify({
-            'error': 'Daily free limit reached (3/3). Upgrade to Premium for unlimited access.'
+            'error': 'Daily free limit reached (10/10). Upgrade to Premium for unlimited access.'
         }), 429
 
     if 'file' not in request.files:
@@ -319,7 +577,8 @@ def parse_pdf(user_id):
     if not file.filename.lower().endswith('.pdf'):
         return jsonify({'error': 'Only PDF files are accepted'}), 400
 
-    filename = secure_filename(file.filename)
+    ext = os.path.splitext(file.filename)[1].lower() or '.pdf'
+    filename = str(uuid.uuid4()) + ext
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
@@ -329,9 +588,9 @@ def parse_pdf(user_id):
         if os.path.exists(filepath):
             os.remove(filepath)
         return jsonify({'error': f'Failed to parse PDF: {str(e)}'}), 500
-
-    if os.path.exists(filepath):
-        os.remove(filepath)
+    finally:
+        if os.path.exists(filepath):
+            os.remove(filepath)
 
     if not text:
         return jsonify({'error': 'No extractable text found in this PDF'}), 400
@@ -349,7 +608,7 @@ def parse_word(user_id):
     allowed, remaining = check_daily_usage(user_id)
     if not allowed:
         return jsonify({
-            'error': 'Daily free limit reached (3/3). Upgrade to Premium for unlimited access.'
+            'error': 'Daily free limit reached (10/10). Upgrade to Premium for unlimited access.'
         }), 429
 
     if 'file' not in request.files:
@@ -358,10 +617,13 @@ def parse_word(user_id):
     file = request.files['file']
     if not file.filename:
         return jsonify({'error': 'No file selected'}), 400
-    if not file.filename.lower().endswith(('.docx', '.doc')):
-        return jsonify({'error': 'Only Word documents (.docx, .doc) are accepted'}), 400
+    if not file.filename.lower().endswith('.docx'):
+        return jsonify({
+            'error': 'Only .docx files are supported. If you have a .doc file, please open it in Word and Save As .docx, then upload again.'
+        }), 400
 
-    filename = secure_filename(file.filename)
+    ext = os.path.splitext(file.filename)[1].lower() or '.docx'
+    filename = str(uuid.uuid4()) + ext
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
@@ -370,10 +632,13 @@ def parse_word(user_id):
     except Exception as e:
         if os.path.exists(filepath):
             os.remove(filepath)
-        return jsonify({'error': f'Failed to parse Word document: {str(e)}'}), 500
-
-    if os.path.exists(filepath):
-        os.remove(filepath)
+        err_msg = str(e)
+        if 'Package not found' in err_msg or 'not a valid' in err_msg:
+            err_msg = 'Invalid .docx file. If your file is .doc format, please open it in Word and Save As .docx.'
+        return jsonify({'error': f'Failed to parse Word document: {err_msg}'}), 500
+    finally:
+        if os.path.exists(filepath):
+            os.remove(filepath)
 
     if not text:
         return jsonify({'error': 'No extractable text found in this document'}), 400
@@ -391,7 +656,7 @@ def parse_url(user_id):
     allowed, remaining = check_daily_usage(user_id)
     if not allowed:
         return jsonify({
-            'error': 'Daily free limit reached (3/3). Upgrade to Premium for unlimited access.'
+            'error': 'Daily free limit reached (10/10). Upgrade to Premium for unlimited access.'
         }), 429
 
     data = request.get_json(silent=True) or {}
@@ -457,8 +722,14 @@ def ai_generate(user_id):
     if action not in PROMPTS:
         return jsonify({'error': 'Invalid action — use: summarize, keypoints, or translate'}), 400
 
-    prompt = PROMPTS[action].format(text=content, lang=target_lang)
-    result, error = call_zhipu_ai(
+    # For long content: truncate to avoid timeout
+    if action == 'translate' and len(content) > 2500:
+        content = content[:2500] + '... [truncated for faster translation]'
+    elif action in ('summarize', 'keypoints') and len(content) > 5000:
+        content = content[:5000] + '... [truncated for faster processing]'
+
+    prompt = PROMPTS[action].replace('{text}', content).replace('{lang}', target_lang)
+    result, error = call_ai(
         messages=[{'role': 'user', 'content': prompt}],
         temperature=0.5,
         max_tokens=4096
@@ -488,11 +759,15 @@ def method_not_allowed(_e):
 def internal_error(_e):
     return jsonify({'error': 'Internal server error'}), 500
 
-# ── Entry Point ────────────────────────────────────────────────────────
+# ── Entry Point ───────────────────────────────────────────────────────
 
 if __name__ == '__main__':
     print("=" * 60)
     print("  Summarify Pro — AI Document Summarizer")
+    print(f"  AI Provider : {AI_PROVIDER} ({OPENAI_MODEL})")
+    print(f"  AI Base URL : {OPENAI_BASE_URL}")
+    print(f"  Supabase URL : {SUPABASE_URL}")
+    print(f"  Stripe : {'configured' if STRIPE_SECRET_KEY else 'NOT configured'}")
     print("  Server running at http://localhost:5000")
     print("=" * 60)
     app.run(debug=False, host='0.0.0.0', port=5000)

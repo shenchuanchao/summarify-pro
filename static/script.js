@@ -48,9 +48,43 @@ const API = (() => {
         parseURL: (url) =>
             fetch(`${BASE}/api/parse/url`, { method: 'POST', headers: headers(), body: JSON.stringify({ url }) }).then(handle),
         aiGenerate: (action, content, targetLang) =>
-            fetch(`${BASE}/api/ai/generate`, { method: 'POST', headers: headers(), body: JSON.stringify({ action, content, target_lang: targetLang || 'Chinese' }) }).then(handle)
+            fetch(`${BASE}/api/ai/generate`, { method: 'POST', headers: headers(), body: JSON.stringify({ action, content, target_lang: targetLang || 'Chinese' }) }).then(handle),
+        getStripeStatus: () => fetch(`${BASE}/api/stripe/get-status`).then(handle),
+        createCheckout: () => fetch(`${BASE}/api/stripe/create-checkout-session`, { method: 'POST', headers: { 'Authorization': `Bearer ${STATE.token}` } }).then(handle),
+        verifyCheckout: (sessionId) => fetch(`${BASE}/api/stripe/verify-session?session_id=${sessionId}`, { headers: { 'Authorization': `Bearer ${STATE.token}` } }).then(handle)
     };
 })();
+
+// ── Stripe ─────────────────────────────────────────────────────
+function upgradeToPremium() {
+    toast('Premium subscription is coming soon. Stay tuned!', 'info');
+}
+
+async function handleStripeReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get('checkout');
+    if (checkout === 'success') {
+        const sessionId = params.get('session_id');
+        if (sessionId) {
+            try {
+                const data = await API.verifyCheckout(sessionId);
+                if (data && data.success) {
+                    if (STATE.user) STATE.user.plan = 'premium';
+                    localStorage.setItem('summarify_user', JSON.stringify(STATE.user));
+                    updateUI();
+                    loadUsage();
+                    toast('🎉 Welcome to Premium!', 'success');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            } catch (e) {
+                toast(e.message || 'Verification failed', 'error');
+            }
+        }
+    } else if (checkout === 'cancelled') {
+        toast('Payment cancelled. You can upgrade anytime!', 'info');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
 
 // ── Toast ───────────────────────────────────────────────────────────────
 let _toastTimer;
@@ -72,16 +106,29 @@ function updateUI() {
     const navUser = document.getElementById('nav-user');
     const userEmail = document.getElementById('user-email');
     const usageBadge = document.getElementById('usage-badge');
+    const planBadge = document.getElementById('plan-badge');
+    const upgradeBtn = document.getElementById('upgrade-btn');
 
     if (STATE.token && STATE.user) {
         navAuth.classList.add('hidden');
         navUser.classList.remove('hidden');
         userEmail.textContent = STATE.user.email;
+
+        if (STATE.user.plan === 'premium') {
+            if (planBadge) planBadge.classList.remove('hidden');
+            if (upgradeBtn) upgradeBtn.classList.add('hidden');
+        } else {
+            if (planBadge) planBadge.classList.add('hidden');
+            if (upgradeBtn) upgradeBtn.classList.remove('hidden');
+        }
+
         loadUsage();
     } else {
         navAuth.classList.remove('hidden');
         navUser.classList.add('hidden');
         usageBadge.textContent = '';
+        if (upgradeBtn) upgradeBtn.classList.add('hidden');
+        if (planBadge) planBadge.classList.add('hidden');
     }
 }
 
@@ -91,8 +138,7 @@ async function loadUsage() {
         const data = await API.usage();
         const badge = document.getElementById('usage-badge');
         if (data.plan === 'premium') {
-            badge.textContent = '⭐ Premium';
-            badge.className = 'text-xs font-medium bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full border border-amber-200';
+            badge.classList.add('hidden');
         } else {
             badge.textContent = `${data.remaining} / ${data.daily_limit} free`;
             badge.className = data.remaining === 0
@@ -395,6 +441,7 @@ document.getElementById('url-input')?.addEventListener('keydown', e => {
 
 // ── Init ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    handleStripeReturn();
     setupDropzone('pdf');
     setupDropzone('word');
     updateUI();
@@ -413,3 +460,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// ── Social Share ────────────────────────────────────────────────────────
+
+const SHARE_TITLE = encodeURIComponent('Summarify Pro — AI Document Summarizer');
+const SHARE_HASHTAGS = encodeURIComponent('AI,Summarizer,Productivity');
+
+function shareOn(platform) {
+    const url = encodeURIComponent(window.location.href);
+    const title = SHARE_TITLE;
+    const text = encodeURIComponent('Summarize documents, extract key points, and translate with AI — all in seconds. Try it now!');
+
+    let shareUrl = '';
+    switch (platform) {
+        case 'twitter':
+            shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}&hashtags=AI,Summarizer,Productivity`;
+            break;
+        case 'facebook':
+            shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+            break;
+        case 'linkedin':
+            shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+            break;
+        case 'reddit':
+            shareUrl = `https://www.reddit.com/submit?url=${url}&title=${title}`;
+            break;
+        case 'whatsapp':
+            shareUrl = `https://wa.me/?text=${text}%20${url}`;
+            break;
+    }
+
+    if (shareUrl) {
+        window.open(shareUrl, '_blank', 'width=600,height=400');
+    }
+}
+
+function copyShareLink() {
+    const url = window.location.href;
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(() => {
+            toast('Link copied to clipboard!', 'success');
+        }).catch(() => {
+            toast('Failed to copy link', 'error');
+        });
+    } else {
+        // Fallback for HTTP / insecure contexts
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            toast('Link copied to clipboard!', 'success');
+        } catch (e) {
+            toast('Failed to copy link', 'error');
+        }
+        document.body.removeChild(ta);
+    }
+}
