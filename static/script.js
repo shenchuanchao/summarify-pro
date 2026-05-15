@@ -15,7 +15,7 @@ const STATE = {
 };
 
 const API = (() => {
-    const BASE = '';
+    const BASE = 'https://summarify-pro-production.up.railway.app';
     const headers = () => {
         const h = { 'Content-Type': 'application/json' };
         if (STATE.token) h['Authorization'] = `Bearer ${STATE.token}`;
