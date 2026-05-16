@@ -339,6 +339,10 @@
                 </button>
             </div>
         </div>
+        <!-- Feedback -->
+        <div class="text-center mb-4">
+            <button onclick="showModal('feedback')" class="text-sm text-gray-400 hover:text-brand-600 transition-colors">💬 Send Feedback</button>
+        </div>
         <!-- Copyright -->
         <p class="text-center text-sm text-gray-400">&copy; 2026 Summarify Pro. All rights reserved.</p>
     </div>
@@ -373,6 +377,20 @@
             <button type="submit" class="w-full bg-brand-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-brand-700 transition-colors">Create account</button>
         </form>
         <p class="mt-4 text-center text-sm text-gray-500">Already have an account? <button onclick="switchModal('login')" class="text-brand-600 font-semibold hover:underline">Log in</button></p>
+    </div>
+</div>
+
+<!-- ═══════════════════════ FEEDBACK MODAL ═══════════════════════ -->
+<div id="modal-feedback" class="modal hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="hideModal('feedback')"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-slide-up">
+        <button onclick="hideModal('feedback')" class="absolute top-4 right-4 text-gray-300 hover:text-gray-600 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        <h2 class="text-xl font-bold text-gray-900 mb-1">Send Feedback</h2>
+        <p class="text-sm text-gray-500 mb-6">We'd love to hear your thoughts, suggestions, or bug reports.</p>
+        <form onsubmit="handleFeedback(event)" class="space-y-4">
+            <div><label class="block text-xs font-semibold text-gray-600 mb-1">Your Feedback</label><textarea id="feedback-content" required rows="5" maxlength="2000" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none" placeholder="Tell us what you think..."></textarea></div>
+            <button type="submit" class="w-full bg-brand-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-brand-700 transition-colors">Submit</button>
+        </form>
     </div>
 </div>
 

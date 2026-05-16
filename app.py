@@ -421,6 +421,27 @@ def get_usage(user_id):
     })
 
 
+# ── Feedback ───────────────────────────────────────────────────────────
+
+@app.route('/api/user/feedback', methods=['POST'])
+@require_auth
+def submit_feedback(user_id):
+    data = request.get_json() or {}
+    content = (data.get('content', '') or '').strip()
+    if not content:
+        return jsonify({'error': 'Feedback content is required'}), 400
+    if len(content) > 2000:
+        return jsonify({'error': 'Feedback too long (max 2000 characters)'}), 400
+
+    sb = get_supabase()
+    sb.table('feedback').insert({
+        'user_id': user_id,
+        'content': content
+    }).execute()
+
+    return jsonify({'success': True, 'message': 'Thank you for your feedback!'})
+
+
 # ── Stripe Endpoints ───────────────────────────────────────────────────
 
 @app.route('/api/stripe/create-checkout-session', methods=['POST'])

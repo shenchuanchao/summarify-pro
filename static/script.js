@@ -49,6 +49,8 @@ const API = (() => {
             fetch(`${BASE}/api/parse/url`, { method: 'POST', headers: headers(), body: JSON.stringify({ url }) }).then(handle),
         aiGenerate: (action, content, targetLang) =>
             fetch(`${BASE}/api/ai/generate`, { method: 'POST', headers: headers(), body: JSON.stringify({ action, content, target_lang: targetLang || 'Chinese' }) }).then(handle),
+        submitFeedback: (content) =>
+            fetch(`${BASE}/api/user/feedback`, { method: 'POST', headers: headers(), body: JSON.stringify({ content }) }).then(handle),
         getStripeStatus: () => fetch(`${BASE}/api/stripe/get-status`).then(handle),
         createCheckout: () => fetch(`${BASE}/api/stripe/create-checkout-session`, { method: 'POST', headers: { 'Authorization': `Bearer ${STATE.token}` } }).then(handle),
         verifyCheckout: (sessionId) => fetch(`${BASE}/api/stripe/verify-session?session_id=${sessionId}`, { headers: { 'Authorization': `Bearer ${STATE.token}` } }).then(handle)
@@ -227,7 +229,28 @@ function hideModal(type) {
 function switchModal(to) {
     hideModal('login');
     hideModal('register');
+    hideModal('feedback');
     showModal(to);
+}
+
+async function handleFeedback(event) {
+    event.preventDefault();
+    if (!requireAuth()) return;
+    const content = document.getElementById('feedback-content').value.trim();
+    if (!content) { toast('Please enter your feedback', 'error'); return; }
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    try {
+        await API.submitFeedback(content);
+        toast('Feedback submitted. Thank you!', 'success');
+        hideModal('feedback');
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Submit';
+    }
 }
 
 // ── Tab Switching ──────────────────────────────────────────────────────
