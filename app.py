@@ -792,12 +792,14 @@ def ai_generate(user_id):
     PROMPTS = {
         'summarize': (
             "You are a professional document analyst. Please provide a **concise, well-structured summary** "
-            "of the following document. Organize the summary with clear sections (e.g., Overview, Key Findings, "
+            "of the following document. IMPORTANT: You MUST respond in the **same language** as the document. "
+            "Organize the summary with clear sections (e.g., Overview, Key Findings, "
             "Conclusion). Keep it professional and to the point.\n\nDocument:\n{text}"
         ),
         'keypoints': (
             "You are a professional document analyst. Please **extract the most important key points** from the "
-            "following document. Present them as a **numbered list**. Each point should be specific, actionable, "
+            "following document. IMPORTANT: You MUST respond in the **same language** as the document. "
+            "Present them as a **numbered list**. Each point should be specific, actionable, "
             "and clearly stated. Highlight any critical data, numbers, or deadlines mentioned.\n\nDocument:\n{text}"
         ),
         'translate': (
