@@ -108,6 +108,7 @@ function updateUI() {
     const usageBadge = document.getElementById('usage-badge');
     const planBadge = document.getElementById('plan-badge');
     const upgradeBtn = document.getElementById('upgrade-btn');
+    const pricingUpgradeBtn = document.getElementById('btn-upgrade-premium');
 
     if (STATE.token && STATE.user) {
         navAuth.classList.add('hidden');
@@ -117,9 +118,11 @@ function updateUI() {
         if (STATE.user.plan === 'premium') {
             if (planBadge) planBadge.classList.remove('hidden');
             if (upgradeBtn) upgradeBtn.classList.add('hidden');
+            if (pricingUpgradeBtn) pricingUpgradeBtn.classList.add('hidden');
         } else {
             if (planBadge) planBadge.classList.add('hidden');
             if (upgradeBtn) upgradeBtn.classList.remove('hidden');
+            if (pricingUpgradeBtn) pricingUpgradeBtn.classList.remove('hidden');
         }
 
         loadUsage();
@@ -129,6 +132,7 @@ function updateUI() {
         usageBadge.textContent = '';
         if (upgradeBtn) upgradeBtn.classList.add('hidden');
         if (planBadge) planBadge.classList.add('hidden');
+        if (pricingUpgradeBtn) pricingUpgradeBtn.classList.remove('hidden');
     }
 }
 
