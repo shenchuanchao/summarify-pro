@@ -74,6 +74,18 @@ html { scroll-behavior: smooth; }
 /* Selection color */
 ::selection { background-color: #bfdbfe; color: #1e40af; }
 
+/* Streaming cursor — shows user that AI is still generating */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+#result-content.streaming::after {
+    content: ' ▌';
+    color: #6366f1;
+    animation: blink 1s step-end infinite;
+}
+
 /* Focus visible */
 :focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
 

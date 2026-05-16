@@ -447,14 +447,19 @@ async function runAI(action) {
             const el = document.getElementById('result-content');
             el.textContent = text;
             el.classList.remove('hidden');
+            el.classList.add('streaming');
             document.getElementById('result-loading').classList.add('hidden');
         });
 
+        // Remove streaming cursor
+        const resultEl = document.getElementById('result-content');
+        resultEl.classList.remove('streaming');
+
         if (!hasContent || !data.result || !data.result.trim()) {
             document.getElementById('result-loading').classList.add('hidden');
-            document.getElementById('result-content').textContent =
+            resultEl.textContent =
                 'No content received. The model may not support streaming. Try switching to glm-4.5-flash in Railway settings, or contact support.';
-            document.getElementById('result-content').classList.remove('hidden');
+            resultEl.classList.remove('hidden');
             return;
         }
 
