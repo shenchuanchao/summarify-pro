@@ -250,7 +250,8 @@ def call_ai_stream(messages: list, temperature: float = 0.5, max_tokens: int = 1
         'messages': messages,
         'temperature': temperature,
         'max_tokens': max_tokens,
-        'stream': True
+        'stream': True,
+        'thinking': {"type": "disabled"}
     }
 
     try:
@@ -283,8 +284,12 @@ def call_ai_stream(messages: list, temperature: float = 0.5, max_tokens: int = 1
                 if 'choices' in chunk and len(chunk['choices']) > 0:
                     delta = chunk['choices'][0].get('delta', {})
                     content = delta.get('content', '')
+                    reasoning = delta.get('reasoning_content', '')
                     if content:
                         yield json.dumps({'content': content})
+                    elif reasoning:
+                        # For thinking models, also stream the reasoning if no content yet
+                        yield json.dumps({'content': '[Thinking] ' + reasoning})
             except (json.JSONDecodeError, KeyError):
                 continue
 

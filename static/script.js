@@ -438,21 +438,27 @@ async function runAI(action) {
     const titles = { summarize: 'AI Summary', keypoints: 'Key Points', translate: `Translation (${targetLang})` };
     document.getElementById('result-title').textContent = titles[action] || 'AI Result';
 
-    // Disable all AI buttons
     document.querySelectorAll('.ai-btn').forEach(b => b.disabled = true);
 
+    let hasContent = false;
     try {
         const data = await API.aiGenerate(action, STATE.parsedText, targetLang, (text) => {
-            // Stream: update result progressively
+            hasContent = true;
             const el = document.getElementById('result-content');
             el.textContent = text;
             el.classList.remove('hidden');
             document.getElementById('result-loading').classList.add('hidden');
         });
+
+        if (!hasContent || !data.result || !data.result.trim()) {
+            document.getElementById('result-loading').classList.add('hidden');
+            document.getElementById('result-content').textContent =
+                'No content received. The model may not support streaming. Try switching to glm-4.5-flash in Railway settings, or contact support.';
+            document.getElementById('result-content').classList.remove('hidden');
+            return;
+        }
+
         STATE.lastActionResult = data.result;
-        document.getElementById('result-content').textContent = data.result;
-        document.getElementById('result-content').classList.remove('hidden');
-        document.getElementById('result-loading').classList.add('hidden');
         document.getElementById('result-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (e) {
         toast(e.message, 'error');
