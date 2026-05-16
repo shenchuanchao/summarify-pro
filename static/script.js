@@ -47,8 +47,47 @@ const API = (() => {
         },
         parseURL: (url) =>
             fetch(`${BASE}/api/parse/url`, { method: 'POST', headers: headers(), body: JSON.stringify({ url }) }).then(handle),
-        aiGenerate: (action, content, targetLang) =>
-            fetch(`${BASE}/api/ai/generate`, { method: 'POST', headers: headers(), body: JSON.stringify({ action, content, target_lang: targetLang || 'Chinese' }) }).then(handle),
+        aiGenerate: async (action, content, targetLang, onChunk) => {
+            const resp = await fetch(`${BASE}/api/ai/generate`, {
+                method: 'POST',
+                headers: { ...headers(), 'Accept': 'text/event-stream' },
+                body: JSON.stringify({ action, content, target_lang: targetLang || 'Chinese' })
+            });
+            if (!resp.ok) {
+                try { const e = await resp.json(); throw new Error(e.error || `HTTP ${resp.status}`); }
+                catch (parseErr) { throw new Error(parseErr.message || `HTTP ${resp.status}`); }
+            }
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            let result = '';
+            let actionName = action;
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // keep incomplete line
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || !trimmed.startsWith('data: ')) continue;
+                    const payload = trimmed.slice(6);
+                    if (payload === '[DONE]') { result = result || ''; continue; }
+                    try {
+                        const parsed = JSON.parse(payload);
+                        if (parsed.action) actionName = parsed.action;
+                        if (parsed.content) {
+                            result += parsed.content;
+                            if (onChunk) onChunk(result);
+                        }
+                        if (parsed.error) throw new Error(parsed.error);
+                    } catch (e) {
+                        if (e.message && !e.message.includes('JSON')) throw e;
+                    }
+                }
+            }
+            return { result, action: actionName };
+        },
         submitFeedback: (content) =>
             fetch(`${BASE}/api/user/feedback`, { method: 'POST', headers: headers(), body: JSON.stringify({ content }) }).then(handle),
         getStripeStatus: () => fetch(`${BASE}/api/stripe/get-status`).then(handle),
@@ -403,7 +442,13 @@ async function runAI(action) {
     document.querySelectorAll('.ai-btn').forEach(b => b.disabled = true);
 
     try {
-        const data = await API.aiGenerate(action, STATE.parsedText, targetLang);
+        const data = await API.aiGenerate(action, STATE.parsedText, targetLang, (text) => {
+            // Stream: update result progressively
+            const el = document.getElementById('result-content');
+            el.textContent = text;
+            el.classList.remove('hidden');
+            document.getElementById('result-loading').classList.add('hidden');
+        });
         STATE.lastActionResult = data.result;
         document.getElementById('result-content').textContent = data.result;
         document.getElementById('result-content').classList.remove('hidden');

@@ -7,6 +7,7 @@ Stripe-powered Premium subscription
 
 import os
 import re
+import json
 import hashlib
 import secrets
 import uuid
@@ -19,7 +20,7 @@ from threading import Lock
 import time
 from urllib.parse import urlparse
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from flask_cors import CORS
 import jwt
 import requests
@@ -232,6 +233,67 @@ def call_ai(messages: list, temperature: float = 0.5, max_tokens: int = 4096):
         return None, 'Cannot connect to AI API — check OPENAI_BASE_URL in .env'
     except Exception as e:
         return None, f'Unexpected error: {str(e)}'
+
+
+def call_ai_stream(messages: list, temperature: float = 0.5, max_tokens: int = 1024):
+    """Stream AI response as SSE chunks — yields JSON strings ready for SSE."""
+    if not OPENAI_API_KEY:
+        yield json.dumps({'error': 'AI provider API key not configured'})
+        return
+
+    headers = {
+        'Authorization': f'Bearer {OPENAI_API_KEY}',
+        'Content-Type': 'application/json'
+    }
+    payload = {
+        'model': OPENAI_MODEL,
+        'messages': messages,
+        'temperature': temperature,
+        'max_tokens': max_tokens,
+        'stream': True
+    }
+
+    try:
+        resp = requests.post(
+            f'{OPENAI_BASE_URL}/chat/completions',
+            json=payload,
+            headers=headers,
+            timeout=180,
+            stream=True
+        )
+
+        if resp.status_code != 200:
+            try:
+                err = resp.json()
+                yield json.dumps({'error': err.get('error', {}).get('message', f'API error (HTTP {resp.status_code})')})
+            except Exception:
+                yield json.dumps({'error': f'API error (HTTP {resp.status_code})'})
+            return
+
+        for line in resp.iter_lines():
+            line = line.decode('utf-8').strip()
+            if not line:
+                continue
+            if line == 'data: [DONE]':
+                break
+            if line.startswith('data: '):
+                line = line[6:]
+            try:
+                chunk = json.loads(line)
+                if 'choices' in chunk and len(chunk['choices']) > 0:
+                    delta = chunk['choices'][0].get('delta', {})
+                    content = delta.get('content', '')
+                    if content:
+                        yield json.dumps({'content': content})
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    except requests.exceptions.Timeout:
+        yield json.dumps({'error': 'Request timed out after 180 seconds'})
+    except requests.exceptions.ConnectionError:
+        yield json.dumps({'error': 'Cannot connect to AI API — check OPENAI_BASE_URL'})
+    except Exception as e:
+        yield json.dumps({'error': f'Unexpected error: {str(e)}'})
 
 # ── Text Extractors ────────────────────────────────────────────────────
 
@@ -750,16 +812,26 @@ def ai_generate(user_id):
         content = content[:5000] + '... [truncated for faster processing]'
 
     prompt = PROMPTS[action].replace('{text}', content).replace('{lang}', target_lang)
-    result, error = call_ai(
-        messages=[{'role': 'user', 'content': prompt}],
-        temperature=0.5,
-        max_tokens=4096
+
+    def generate():
+        yield f"data: {json.dumps({'action': action})}\n\n"
+        for chunk_json in call_ai_stream(
+            messages=[{'role': 'user', 'content': prompt}],
+            temperature=0.5,
+            max_tokens=1024
+        ):
+            yield f"data: {chunk_json}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
+        }
     )
-
-    if error:
-        return jsonify({'error': f'AI processing failed: {error}'}), 500
-
-    return jsonify({'result': result, 'action': action})
 
 
 # ── Error Handlers ────────────────────────────────────────────────────
