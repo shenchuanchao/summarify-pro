@@ -770,4 +770,4 @@ if __name__ == '__main__':
     print(f"  Stripe : {'configured' if STRIPE_SECRET_KEY else 'NOT configured'}")
     print("  Server running at http://localhost:5000")
     print("=" * 60)
-    app.run(debug=False, host='0.0.0.0', port=int(os.getenv('PORT', 5050)))
+    app.run(debug=False, host='0.0.0.0', port=int(os.getenv('PORT', 8080)))
