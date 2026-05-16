@@ -813,19 +813,20 @@ def ai_generate(user_id):
         return jsonify({'error': 'Invalid action — use: summarize, keypoints, or translate'}), 400
 
     # For long content: truncate to avoid timeout
-    if action == 'translate' and len(content) > 2500:
-        content = content[:2500] + '... [truncated for faster translation]'
+    if action == 'translate' and len(content) > 3000:
+        content = content[:3000]
     elif action in ('summarize', 'keypoints') and len(content) > 5000:
-        content = content[:5000] + '... [truncated for faster processing]'
+        content = content[:5000]
 
     prompt = PROMPTS[action].replace('{text}', content).replace('{lang}', target_lang)
 
     def generate():
         yield f"data: {json.dumps({'action': action})}\n\n"
+        token_limit = 2048 if action == 'translate' else 1024
         for chunk_json in call_ai_stream(
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.5,
-            max_tokens=1024
+            max_tokens=token_limit
         ):
             yield f"data: {chunk_json}\n\n"
         yield "data: [DONE]\n\n"
