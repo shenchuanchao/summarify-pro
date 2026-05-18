@@ -20,7 +20,7 @@ from threading import Lock
 import time
 from urllib.parse import urlparse
 
-from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
+from flask import Flask, request, jsonify, send_from_directory, render_template, Response, stream_with_context
 from flask_cors import CORS
 import jwt
 import requests
@@ -358,11 +358,23 @@ def extract_url_text(url: str) -> str:
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     return '\n'.join(lines)[:30000]
 
-# ── Static Route ───────────────────────────────────────────────────────
+# ── Page Routes ───────────────────────────────────────────────────────
 
 @app.route('/')
 def index():
-    return send_from_directory(app.static_folder, 'index.html')
+    return render_template('index.html')
+
+@app.route('/login')
+def login_page():
+    return render_template('login.html')
+
+@app.route('/register')
+def register_page():
+    return render_template('register.html')
+
+@app.route('/privacy')
+def privacy_page():
+    return render_template('privacy.html')
 
 # ── Auth Endpoints ─────────────────────────────────────────────────────
 
@@ -811,49 +823,36 @@ def youtube_transcript(user_id):
         return jsonify({'error': 'Invalid YouTube URL. Please provide a valid YouTube video link.'}), 400
 
     try:
-        # Try getting English transcript first, fall back to any available
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-
-        # Priority: manual English > auto-generated English > any transcript
-        transcript = None
+        # Try English transcript first, fall back to any available
+        ytt = YouTubeTranscriptApi()
+        segments = None
+        language = 'en'
         try:
-            transcript = transcript_list.find_transcript(['en'])
+            segments = ytt.fetch(video_id, languages=['en'])
         except Exception:
             pass
 
-        if transcript is None:
+        if segments is None:
             try:
-                # Try auto-generated
-                for t in transcript_list:
-                    if t.is_generated:
-                        transcript = t
-                        break
-            except Exception:
-                pass
+                segments = ytt.fetch(video_id)
+                language = 'auto'
+            except Exception as e2:
+                return jsonify({'error': f'No transcript available for this video: {str(e2)}'}), 400
 
-        if transcript is None:
-            # Just take whatever is available
-            try:
-                transcript = next(iter(transcript_list))
-            except Exception:
-                pass
+        if not segments:
+            return jsonify({'error': 'Transcript is empty for this video.'}), 400
 
-        if transcript is None:
-            return jsonify({'error': 'No transcript available for this video. The video may not have captions.'}), 400
-
-        # Fetch the transcript segments
-        segments = transcript.fetch()
-        text = ' '.join(seg.get('text', '') for seg in segments if seg.get('text'))
+        text = ' '.join(s.get('text', '') for s in segments if s.get('text'))
 
         if not text or not text.strip():
-            return jsonify({'error': 'Transcript is empty for this video.'}), 400
+            return jsonify({'error': 'Transcript text is empty.'}), 400
 
         return jsonify({
             'text': text.strip(),
             'word_count': len(text.split()),
             'remaining': remaining,
             'video_id': video_id,
-            'language': transcript.language_code
+            'language': language
         })
 
     except Exception as e:
@@ -869,7 +868,7 @@ def youtube_transcript(user_id):
 
 @app.route('/youtube-summarizer')
 def youtube_summarizer_page():
-    return send_from_directory(app.static_folder, 'youtube.html')
+    return render_template('youtube.html')
 
 
 # ── AI Generate Endpoint ───────────────────────────────────────────────

@@ -1,0 +1,264 @@
+{% set title = "Summarify Pro — AI Document Summarizer" %}
+{% set description = "Summarify Pro — AI-powered document and YouTube summarizer. Upload PDF, Word, URLs or YouTube videos and get instant AI summaries, key points, and translations." %}
+{% set canonical = None %}
+<!DOCTYPE html>
+<html lang="en">
+{% include '_head.html' %}
+<body class="bg-gray-50 text-gray-900 antialiased">
+{% include '_navbar.html' %}
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<section class="pt-32 pb-20 px-4">
+    <div class="max-w-4xl mx-auto text-center animate-slide-up">
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight">
+            Summarize anything.<br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-brand-800">In seconds.</span>
+        </h1>
+        <p class="mt-6 text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
+            Upload PDFs, Word documents, or paste any URL. Our AI instantly delivers
+            professional summaries, extracts key points, and translates into 5 languages.
+        </p>
+        <div class="mt-10 flex flex-wrap justify-center gap-3 text-sm text-gray-400">
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> PDF</span>
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Word</span>
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> URL</span>
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> AI Summary</span>
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Key Points</span>
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Translation</span>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════ UPLOAD SECTION ═══════════════════════ -->
+<section id="upload-section" class="max-w-3xl mx-auto px-4 pb-10">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+        <!-- Tabs -->
+        <div class="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6">
+            <button data-tab="pdf" class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all active bg-white text-brand-700 shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                PDF
+            </button>
+            <button data-tab="word" class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all text-gray-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Word
+            </button>
+            <button data-tab="url" class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all text-gray-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                URL
+            </button>
+            <button onclick="location.href='/youtube-summarizer'" class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-red-600">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                YouTube
+            </button>
+        </div>
+
+        <!-- PDF Tab -->
+        <div id="tab-pdf" class="tab-content">
+            <div id="pdf-dropzone" class="dropzone border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-brand-400 hover:bg-brand-50/30 transition-all">
+                <div class="mx-auto w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mb-4">
+                    <svg class="w-7 h-7 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                </div>
+                <p class="text-gray-700 font-semibold mb-1">Drop your PDF here</p>
+                <p class="text-sm text-gray-400">or click to browse — Max 16 MB</p>
+                <input type="file" id="pdf-input" accept=".pdf" class="hidden">
+            </div>
+            <div id="pdf-file-info" class="hidden mt-4 p-3 bg-brand-50 rounded-lg flex items-center justify-between text-sm">
+                <span id="pdf-file-name" class="text-brand-700 font-medium truncate"></span>
+                <button onclick="clearFile('pdf')" class="text-red-400 hover:text-red-600 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Word Tab -->
+        <div id="tab-word" class="tab-content hidden">
+            <div id="word-dropzone" class="dropzone border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-brand-400 hover:bg-brand-50/30 transition-all">
+                <div class="mx-auto w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mb-4">
+                    <svg class="w-7 h-7 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5h14v14a2 2 0 01-2 2z"/></svg>
+                </div>
+                <p class="text-gray-700 font-semibold mb-1">Drop your Word document here</p>
+                <p class="text-sm text-gray-400">.docx or .doc — Max 16 MB</p>
+                <input type="file" id="word-input" accept=".docx,.doc" class="hidden">
+            </div>
+            <div id="word-file-info" class="hidden mt-4 p-3 bg-brand-50 rounded-lg flex items-center justify-between text-sm">
+                <span id="word-file-name" class="text-brand-700 font-medium truncate"></span>
+                <button onclick="clearFile('word')" class="text-red-400 hover:text-red-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- URL Tab -->
+        <div id="tab-url" class="tab-content hidden">
+            <div class="flex gap-3">
+                <input id="url-input" type="url" placeholder="https://example.com/article" class="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow">
+                <button id="url-parse-btn" onclick="parseURL()" class="bg-brand-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors shadow-sm whitespace-nowrap disabled:opacity-50">
+                    Fetch & Parse
+                </button>
+            </div>
+        </div>
+
+        <!-- Parse Button -->
+        <div id="parse-actions" class="hidden mt-5">
+            <button id="parse-btn" class="w-full bg-brand-600 text-white py-3 rounded-xl font-semibold hover:bg-brand-700 transition-colors shadow-md flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Extract Text
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div id="parse-loading" class="hidden mt-5 flex items-center justify-center gap-3 py-4 text-brand-600">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <span class="text-sm font-medium">Extracting text...</span>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════ PARSED CONTENT ═══════════════════════ -->
+<section id="parsed-section" class="hidden max-w-3xl mx-auto px-4 pb-8 animate-fade-in">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Text Extracted
+            </h3>
+            <span id="parsed-word-count" class="text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full"></span>
+        </div>
+        <div id="parsed-content" class="text-sm text-gray-600 leading-relaxed max-h-48 overflow-y-auto p-4 bg-gray-50 rounded-xl border border-gray-100 whitespace-pre-wrap"></div>
+
+        <!-- AI Actions -->
+        <div class="mt-6 border-t border-gray-100 pt-5">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">AI Actions</p>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="runAI('summarize')" class="ai-btn flex items-center gap-1.5 px-4 py-2.5 bg-brand-600 text-white text-sm font-medium rounded-xl hover:bg-brand-700 transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg> Summarize
+                </button>
+                <button onclick="runAI('keypoints')" class="ai-btn flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Key Points
+                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="runAI('translate')" class="ai-btn flex items-center gap-1.5 px-4 py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 transition-colors shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg> Translate to
+                    </button>
+                    <select id="target-lang" class="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white text-gray-700 outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer">
+                        <option value="Chinese">🇨🇳 Chinese</option>
+                        <option value="Spanish">🇪🇸 Spanish</option>
+                        <option value="German">🇩🇪 German</option>
+                        <option value="Japanese">🇯🇵 Japanese</option>
+                        <option value="English">🇺🇸 English</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════ AI RESULT ═══════════════════════ -->
+<section id="result-section" class="hidden max-w-3xl mx-auto px-4 pb-8 animate-fade-in">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+        <div class="flex items-center justify-between mb-4">
+            <h3 id="result-title" class="font-semibold text-gray-900"></h3>
+            <div class="flex gap-2">
+                <button onclick="copyResult()" class="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-brand-600 bg-gray-50 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors border border-gray-200">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Copy
+                </button>
+                <button onclick="downloadResult()" class="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-brand-600 bg-gray-50 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors border border-gray-200">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Download TXT
+                </button>
+            </div>
+        </div>
+        <div id="result-content" class="prose prose-sm max-w-none text-gray-700 leading-relaxed p-4 bg-gray-50 rounded-xl border border-gray-100 min-h-[100px] max-h-96 overflow-y-auto whitespace-pre-wrap"></div>
+        <div id="result-loading" class="hidden flex items-center justify-center gap-3 py-8 text-brand-600">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <span class="text-sm font-medium">AI is thinking...</span>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════ FEATURES ═══════════════════════ -->
+<section class="py-20 px-4 bg-white border-t border-gray-100">
+    <div class="max-w-5xl mx-auto text-center mb-14">
+        <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-4 py-1.5 rounded-full">Features</span>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900">Everything you need</h2>
+        <p class="mt-3 text-gray-500 max-w-xl mx-auto">Professional document processing powered by cutting-edge AI.</p>
+    </div>
+    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Card 1 -->
+        <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-brand-200 hover:shadow-md transition-all">
+            <div class="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2">Multi-Format Upload</h3>
+            <p class="text-sm text-gray-500 leading-relaxed">Drag & drop PDFs, Word documents, or paste any URL. We extract clean text automatically.</p>
+        </div>
+        <!-- Card 2 -->
+        <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-brand-200 hover:shadow-md transition-all">
+            <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2">AI-Powered Analysis</h3>
+            <p class="text-sm text-gray-500 leading-relaxed">Powered by Zhipu GLM-4-Flash. Get accurate summaries and key point extraction in seconds.</p>
+        </div>
+        <!-- Card 3 -->
+        <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-brand-200 hover:shadow-md transition-all">
+            <div class="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2">5-Language Translation</h3>
+            <p class="text-sm text-gray-500 leading-relaxed">Instantly translate documents between English, Chinese, Spanish, German, and Japanese.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════ PRICING ═══════════════════════ -->
+<section id="pricing" class="py-20 px-4 bg-gray-50">
+    <div class="max-w-5xl mx-auto text-center mb-14">
+        <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-4 py-1.5 rounded-full">Pricing</span>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900">Simple, transparent pricing</h2>
+        <p class="mt-3 text-gray-500 max-w-xl mx-auto">Start for free. Upgrade when you need more.</p>
+    </div>
+    <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Free -->
+        <div class="bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-lg transition-shadow">
+            <h3 class="text-xl font-bold text-gray-900">Free</h3>
+            <p class="text-sm text-gray-500 mt-1">Perfect for getting started</p>
+            <div class="mt-6 mb-6">
+                <span class="text-4xl font-extrabold text-gray-900">$0</span>
+                <span class="text-gray-400 text-sm">/month</span>
+            </div>
+            <ul class="space-y-3 text-sm text-gray-600">
+                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> 10 document extractions per day</li>
+                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> PDF, Word & URL parsing</li>
+                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> AI summary & key points</li>
+                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Multi-language translation</li>
+            </ul>
+            <button onclick="document.getElementById('upload-section').scrollIntoView({behavior:'smooth'})" class="mt-8 w-full py-3 rounded-xl border-2 border-brand-600 text-brand-600 font-semibold text-sm hover:bg-brand-50 transition-colors">Get Started</button>
+        </div>
+        <!-- Premium -->
+        <div class="bg-brand-700 rounded-2xl border-2 border-brand-600 p-8 relative overflow-hidden hover:shadow-xl transition-shadow">
+            <span class="absolute top-4 right-4 bg-amber-400 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">POPULAR</span>
+            <h3 class="text-xl font-bold text-white">Premium</h3>
+            <p class="text-sm text-brand-200 mt-1">For professionals & teams</p>
+            <div class="mt-6 mb-6">
+                <span class="text-4xl font-extrabold text-white">$9.99</span>
+                <span class="text-brand-200 text-sm">/month</span>
+            </div>
+            <ul class="space-y-3 text-sm text-brand-100">
+                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> <strong>Unlimited</strong> daily usage</li>
+                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Everything in Free</li>
+                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Priority AI processing</li>
+                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Larger file support (50 MB)</li>
+                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Priority email support</li>
+            </ul>
+            <button id="btn-upgrade-premium" onclick="upgradeToPremium()" class="mt-8 w-full py-3 rounded-xl bg-white text-brand-700 font-semibold text-sm hover:bg-brand-50 transition-colors">Upgrade to Premium</button>
+        </div>
+    </div>
+</section>
+
+{% include '_footer.html' %}
+{% include '_modals.html' %}
+<script src="/script.js"></script>
+</body>
+</html>

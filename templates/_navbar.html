@@ -1,0 +1,23 @@
+<!-- ═══════════════════════ NAVBAR ═══════════════════════ -->
+<nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/60 transition-shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <a href="/" class="flex items-center gap-2.5 font-bold text-xl text-brand-700">
+                <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="url(#g)"/><path d="M8 16h4l3-8 4 16 3-8h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#3b82f6"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient></defs></svg>
+                Summarify <span class="text-brand-600">Pro</span>
+            </a>
+            <!-- Auth Buttons (shown when not logged in) -->
+            <div id="nav-auth" class="flex items-center gap-3">
+                <button onclick="showModal('login')" class="text-sm font-medium text-gray-600 hover:text-brand-600 transition-colors px-3 py-2">Log in</button>
+                <button onclick="showModal('register')" class="text-sm font-semibold bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors shadow-sm">Sign up free</button>
+            </div>
+            <!-- User Info (shown when logged in) -->
+            <div id="nav-user" class="hidden items-center gap-4">
+                <span id="plan-badge" class="hidden text-xs font-medium bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full border border-amber-200">⭐ Premium</span>
+                <span id="usage-badge" class="text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200"></span>
+                <span id="user-email" class="text-sm text-gray-600 font-medium"></span>
+                <button onclick="logout()" class="text-sm text-gray-500 hover:text-red-500 transition-colors">Sign out</button>
+            </div>
+        </div>
+    </div>
+</nav>

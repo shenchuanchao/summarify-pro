@@ -1,0 +1,48 @@
+<!-- ═══════════════════════ LOGIN MODAL ═══════════════════════ -->
+<div id="modal-login" class="modal hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="hideModal('login')"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 animate-slide-up">
+        <button onclick="hideModal('login')" class="absolute top-4 right-4 text-gray-300 hover:text-gray-600 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        <h2 class="text-xl font-bold text-gray-900 mb-1">Welcome back</h2>
+        <p class="text-sm text-gray-500 mb-6">Log in to your account</p>
+        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+            <div><label class="block text-xs font-semibold text-gray-600 mb-1">Email</label><input id="login-email" type="email" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="you@example.com"></div>
+            <div><label class="block text-xs font-semibold text-gray-600 mb-1">Password</label><input id="login-password" type="password" required minlength="6" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="••••••"></div>
+            <button type="submit" class="w-full bg-brand-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-brand-700 transition-colors">Log in</button>
+        </form>
+        <p class="mt-4 text-center text-sm text-gray-500">Don't have an account? <button onclick="switchModal('register')" class="text-brand-600 font-semibold hover:underline">Sign up</button></p>
+    </div>
+</div>
+
+<!-- ═══════════════════════ REGISTER MODAL ═══════════════════════ -->
+<div id="modal-register" class="modal hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="hideModal('register')"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 animate-slide-up">
+        <button onclick="hideModal('register')" class="absolute top-4 right-4 text-gray-300 hover:text-gray-600 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        <h2 class="text-xl font-bold text-gray-900 mb-1">Create your account</h2>
+        <p class="text-sm text-gray-500 mb-6">Start with 3 free document extractions per day</p>
+        <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4">
+            <div><label class="block text-xs font-semibold text-gray-600 mb-1">Email</label><input id="register-email" type="email" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="you@example.com"></div>
+            <div><label class="block text-xs font-semibold text-gray-600 mb-1">Password</label><input id="register-password" type="password" required minlength="6" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="At least 6 characters"></div>
+            <button type="submit" class="w-full bg-brand-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-brand-700 transition-colors">Create account</button>
+        </form>
+        <p class="mt-4 text-center text-sm text-gray-500">Already have an account? <button onclick="switchModal('login')" class="text-brand-600 font-semibold hover:underline">Log in</button></p>
+    </div>
+</div>
+
+<!-- ═══════════════════════ FEEDBACK MODAL ═══════════════════════ -->
+<div id="modal-feedback" class="modal hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="hideModal('feedback')"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-slide-up">
+        <button onclick="hideModal('feedback')" class="absolute top-4 right-4 text-gray-300 hover:text-gray-600 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        <h2 class="text-xl font-bold text-gray-900 mb-1">Send Feedback</h2>
+        <p class="text-sm text-gray-500 mb-6">We'd love to hear your thoughts, suggestions, or bug reports.</p>
+        <form onsubmit="handleFeedback(event)" class="space-y-4">
+            <div><label class="block text-xs font-semibold text-gray-600 mb-1">Your Feedback</label><textarea id="feedback-content" required rows="5" maxlength="2000" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none" placeholder="Tell us what you think..."></textarea></div>
+            <button type="submit" class="w-full bg-brand-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-brand-700 transition-colors">Submit</button>
+        </form>
+    </div>
+</div>
+
+<!-- ═══════════════════════ TOAST ═══════════════════════ -->
+<div id="toast" class="hidden fixed bottom-6 right-6 z-[200] bg-gray-900 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium animate-fade-in max-w-xs"></div>
