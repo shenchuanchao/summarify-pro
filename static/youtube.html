@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Summarify Pro — Free YouTube Video Summarizer. Paste any YouTube URL and get AI-powered summaries, key points, and translations in seconds.">
+    <title>YouTube Video Summarizer — Summarify Pro</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="canonical" href="https://summarifypro.com/youtube-summarizer">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+                            400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+                            800: '#1e40af', 900: '#1e3a8a', 950: '#172554'
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.6s ease-out',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'float': 'float 3s ease-in-out infinite'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased">
+
+<!-- ═══════════ NAVBAR ═══════════ -->
+<nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/60 transition-shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <a href="/" class="flex items-center gap-2.5 font-bold text-xl text-brand-700">
+                <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="url(#g)"/><path d="M8 16h4l3-8 4 16 3-8h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#3b82f6"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient></defs></svg>
+                Summarify <span class="text-brand-600">Pro</span>
+            </a>
+            <div id="nav-auth" class="flex items-center gap-3">
+                <button onclick="showModal('login')" class="text-sm font-medium text-gray-600 hover:text-brand-600 transition-colors px-3 py-2">Log in</button>
+                <button onclick="showModal('register')" class="text-sm font-semibold bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors shadow-sm">Sign up free</button>
+            </div>
+            <div id="nav-user" class="hidden items-center gap-4">
+                <span id="plan-badge" class="hidden text-xs font-medium bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full border border-amber-200">⭐ Premium</span>
+                <span id="usage-badge" class="text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200"></span>
+                <span id="user-email" class="text-sm text-gray-600 font-medium"></span>
+                <button onclick="logout()" class="text-sm text-gray-500 hover:text-red-500 transition-colors">Sign out</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="pt-28 pb-10 px-4">
+    <div class="max-w-3xl mx-auto text-center">
+        <div class="inline-flex items-center gap-2 bg-red-50 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-red-200">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+            YouTube Video Summarizer
+        </div>
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900 mb-4">
+            Summarize Any <span class="text-red-600">YouTube</span> Video
+        </h1>
+        <p class="text-lg text-gray-500 mb-10 max-w-xl mx-auto">
+            Paste a YouTube link, get the transcript, and let AI generate a summary, key points, or translation — all in one click.
+        </p>
+    </div>
+</section>
+
+<!-- ═══════════ MAIN INPUT ═══════════ -->
+<section class="max-w-3xl mx-auto px-4 pb-10">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+
+        <!-- URL Input -->
+        <div class="flex gap-3 mb-4">
+            <input id="youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." class="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-shadow">
+            <button id="fetch-btn" onclick="fetchTranscript()" class="bg-red-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm whitespace-nowrap disabled:opacity-50">
+                Get Transcript
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div id="fetch-loading" class="hidden flex items-center justify-center gap-3 py-4 text-red-600">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <span class="text-sm font-medium">Fetching transcript...</span>
+        </div>
+
+        <!-- Quick Examples -->
+        <div class="text-xs text-gray-400 mt-2">
+            <span>Try an example: </span>
+            <button onclick="document.getElementById('youtube-url').value='https://www.youtube.com/watch?v=dQw4w9WgXcQ'" class="text-brand-500 hover:text-brand-700 underline">Rick Astley</button>
+            <span class="mx-1">·</span>
+            <button onclick="document.getElementById('youtube-url').value='https://youtu.be/jNQXAC9IVRw'" class="text-brand-500 hover:text-brand-700 underline">Me at the zoo</button>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════ TRANSCRIPT DISPLAY ═══════════ -->
+<section id="transcript-section" class="hidden max-w-3xl mx-auto px-4 pb-6">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-gray-800">📝 Video Transcript</h2>
+            <div class="flex items-center gap-3">
+                <span id="transcript-lang" class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full"></span>
+                <span id="transcript-count" class="text-sm text-gray-400"></span>
+            </div>
+        </div>
+        <div id="transcript-content" class="text-sm text-gray-600 leading-relaxed max-h-80 overflow-y-auto p-4 bg-gray-50 rounded-xl whitespace-pre-wrap"></div>
+    </div>
+</section>
+
+<!-- ═══════════ AI ACTIONS ═══════════ -->
+<section id="ai-section" class="hidden max-w-3xl mx-auto px-4 pb-6">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">🤖 AI Actions</h2>
+        <div class="flex flex-wrap items-center gap-3">
+            <button onclick="runAI('summarize')" class="ai-btn bg-brand-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors shadow-sm">
+                📄 Summarize
+            </button>
+            <button onclick="runAI('keypoints')" class="ai-btn bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm">
+                🔑 Key Points
+            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="runAI('translate')" class="ai-btn bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm">
+                    🌐 Translate to
+                </button>
+                <select id="target-lang" class="text-sm border border-gray-200 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+                    <option value="Chinese">Chinese</option>
+                    <option value="English">English</option>
+                    <option value="Japanese">Japanese</option>
+                    <option value="Korean">Korean</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                    <option value="German">German</option>
+                    <option value="Arabic">Arabic</option>
+                    <option value="Portuguese">Portuguese</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════ RESULT ═══════════ -->
+<section id="result-section" class="hidden max-w-3xl mx-auto px-4 pb-10">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 id="result-title" class="text-lg font-bold text-gray-800">AI Result</h2>
+            <div class="flex items-center gap-2">
+                <button onclick="copyResult()" class="text-sm text-gray-500 hover:text-brand-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+                    📋 Copy
+                </button>
+                <button onclick="downloadResult()" class="text-sm text-gray-500 hover:text-brand-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+                    💾 Download
+                </button>
+            </div>
+        </div>
+        <div id="result-loading" class="flex items-center gap-3 py-6 text-brand-600">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <span class="text-sm font-medium">Generating with AI...</span>
+        </div>
+        <div id="result-content" class="hidden text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"></div>
+    </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section class="max-w-3xl mx-auto px-4 pb-10">
+    <h2 class="text-2xl font-bold text-center mb-8">How It Works</h2>
+    <div class="grid sm:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl border border-gray-100 p-5 text-center shadow-sm">
+            <div class="text-3xl mb-3">🔗</div>
+            <h3 class="font-semibold text-gray-800 mb-1">1. Paste URL</h3>
+            <p class="text-sm text-gray-500">Drop any YouTube video link — tutorials, lectures, podcasts.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-5 text-center shadow-sm">
+            <div class="text-3xl mb-3">📝</div>
+            <h3 class="font-semibold text-gray-800 mb-1">2. Get Transcript</h3>
+            <p class="text-sm text-gray-500">We fetch the captions and extract the full transcript instantly.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-5 text-center shadow-sm">
+            <div class="text-3xl mb-3">🤖</div>
+            <h3 class="font-semibold text-gray-800 mb-1">3. AI Summarizes</h3>
+            <p class="text-sm text-gray-500">Choose Summary, Key Points, or Translate — AI does the rest.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════ FAQ ═══════════ -->
+<section class="max-w-3xl mx-auto px-4 pb-20">
+    <h2 class="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+    <div class="space-y-4">
+        <details class="bg-white rounded-xl border border-gray-100 p-5 shadow-sm group">
+            <summary class="font-semibold text-gray-800 cursor-pointer select-none">Which YouTube videos can I summarize?</summary>
+            <p class="mt-3 text-sm text-gray-500 leading-relaxed">Any YouTube video that has captions (manual or auto-generated). Most videos on YouTube have auto-generated captions, so the vast majority will work.</p>
+        </details>
+        <details class="bg-white rounded-xl border border-gray-100 p-5 shadow-sm group">
+            <summary class="font-semibold text-gray-800 cursor-pointer select-none">Is the YouTube summarizer free?</summary>
+            <p class="mt-3 text-sm text-gray-500 leading-relaxed">Free users get 10 AI actions per day. Upgrade to Premium for unlimited access — no daily limits on any feature.</p>
+        </details>
+        <details class="bg-white rounded-xl border border-gray-100 p-5 shadow-sm group">
+            <summary class="font-semibold text-gray-800 cursor-pointer select-none">Can I translate YouTube summaries to other languages?</summary>
+            <p class="mt-3 text-sm text-gray-500 leading-relaxed">Yes! After fetching the transcript, click "Translate to" and choose from Chinese, Japanese, Korean, Spanish, French, German, Arabic, and more.</p>
+        </details>
+        <details class="bg-white rounded-xl border border-gray-100 p-5 shadow-sm group">
+            <summary class="font-semibold text-gray-800 cursor-pointer select-none">What if a video has no transcript?</summary>
+            <p class="mt-3 text-sm text-gray-500 leading-relaxed">We'll show a clear error message. You can try another video — most popular videos have transcripts available.</p>
+        </details>
+    </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="border-t border-gray-200 bg-white py-10 px-4">
+    <div class="max-w-7xl mx-auto text-center text-sm text-gray-400">
+        <p>© 2026 Summarify Pro. All rights reserved.</p>
+    </div>
+</footer>
+
+<!-- ═══════════ MODALS ═══════════ -->
+<!-- Login Modal -->
+<div id="modal-login" class="hidden modal fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 mx-4">
+        <h2 class="text-xl font-bold mb-6">Welcome back 👋</h2>
+        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+            <input id="login-email" type="email" placeholder="Email" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            <input id="login-password" type="password" placeholder="Password" required minlength="6" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            <button type="submit" class="w-full bg-brand-600 text-white py-3 rounded-xl font-semibold hover:bg-brand-700 transition-colors shadow-sm">Log in</button>
+        </form>
+        <p class="text-sm text-center mt-4 text-gray-400">Don't have an account? <button onclick="switchModal('register')" class="text-brand-600 font-medium hover:underline">Sign up</button></p>
+        <button onclick="hideModal('login')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg">✕</button>
+    </div>
+</div>
+
+<!-- Register Modal -->
+<div id="modal-register" class="hidden modal fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 mx-4">
+        <h2 class="text-xl font-bold mb-6">Create your account 🚀</h2>
+        <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4">
+            <input id="register-email" type="email" placeholder="Email" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            <input id="register-password" type="password" placeholder="Password (min. 6 characters)" required minlength="6" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            <button type="submit" class="w-full bg-brand-600 text-white py-3 rounded-xl font-semibold hover:bg-brand-700 transition-colors shadow-sm">Create account</button>
+        </form>
+        <p class="text-sm text-center mt-4 text-gray-400">Already have one? <button onclick="switchModal('login')" class="text-brand-600 font-medium hover:underline">Log in</button></p>
+        <button onclick="hideModal('register')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg">✕</button>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl shadow-xl text-sm font-medium max-w-xs"></div>
+
+<!-- ═══════════ SCRIPTS ═══════════ -->
+<script>
+// ── State ──
+const STATE = {
+    token: localStorage.getItem('summarify_token') || null,
+    user: JSON.parse(localStorage.getItem('summarify_user') || 'null'),
+    transcriptText: '',
+    lastResult: ''
+};
+
+const BASE = 'https://summarify-pro-production.up.railway.app';
+
+const apiHeaders = () => {
+    const h = { 'Content-Type': 'application/json' };
+    if (STATE.token) h['Authorization'] = `Bearer ${STATE.token}`;
+    return h;
+};
+
+// ── Toast ──
+let _toastTimer;
+function toast(msg, type = 'info') {
+    const el = document.getElementById('toast');
+    clearTimeout(_toastTimer);
+    el.textContent = msg;
+    el.className = `fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl shadow-xl text-sm font-medium max-w-xs ${type === 'error' ? 'bg-red-600 text-white' : type === 'success' ? 'bg-emerald-600 text-white' : 'bg-gray-900 text-white'}`;
+    el.classList.remove('hidden');
+    _toastTimer = setTimeout(() => el.classList.add('hidden'), 4000);
+}
+
+// ── Modals ──
+function showModal(type) { document.getElementById(`modal-${type}`).classList.remove('hidden'); }
+function hideModal(type) { document.getElementById(`modal-${type}`).classList.add('hidden'); if (type === 'login') document.getElementById('login-form').reset(); if (type === 'register') document.getElementById('register-form').reset(); }
+function switchModal(to) { hideModal('login'); hideModal('register'); showModal(to); }
+
+// ── Auth ──
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Logging in...';
+    try {
+        const res = await fetch(`${BASE}/api/user/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+        STATE.token = data.token; STATE.user = data.user;
+        localStorage.setItem('summarify_token', data.token);
+        localStorage.setItem('summarify_user', JSON.stringify(data.user));
+        updateUI(); hideModal('login'); toast('Logged in!', 'success');
+    } catch (e) { toast(e.message, 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Log in'; }
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value.trim();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Creating account...';
+    try {
+        const res = await fetch(`${BASE}/api/user/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Registration failed');
+        STATE.token = data.token; STATE.user = data.user;
+        localStorage.setItem('summarify_token', data.token);
+        localStorage.setItem('summarify_user', JSON.stringify(data.user));
+        updateUI(); hideModal('register'); toast('Account created! 10 free uses today.', 'success');
+    } catch (e) { toast(e.message, 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Create account'; }
+}
+
+function logout() {
+    STATE.token = null; STATE.user = null; STATE.transcriptText = '';
+    localStorage.removeItem('summarify_token'); localStorage.removeItem('summarify_user');
+    updateUI();
+    document.getElementById('transcript-section').classList.add('hidden');
+    document.getElementById('ai-section').classList.add('hidden');
+    document.getElementById('result-section').classList.add('hidden');
+    toast('Signed out');
+}
+
+function updateUI() {
+    const navAuth = document.getElementById('nav-auth');
+    const navUser = document.getElementById('nav-user');
+    const userEmail = document.getElementById('user-email');
+    const planBadge = document.getElementById('plan-badge');
+    if (STATE.token && STATE.user) {
+        navAuth.classList.add('hidden'); navUser.classList.remove('hidden');
+        userEmail.textContent = STATE.user.email;
+        planBadge.classList.toggle('hidden', STATE.user.plan !== 'premium');
+        loadUsage();
+    } else {
+        navAuth.classList.remove('hidden'); navUser.classList.add('hidden');
+        planBadge.classList.add('hidden'); document.getElementById('usage-badge').textContent = '';
+    }
+}
+
+async function loadUsage() {
+    if (!STATE.token) return;
+    try {
+        const res = await fetch(`${BASE}/api/user/usage`, { headers: apiHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        const badge = document.getElementById('usage-badge');
+        if (data.plan === 'premium') { badge.classList.add('hidden'); }
+        else { badge.textContent = `${data.remaining} / ${data.daily_limit} free`; badge.className = data.remaining === 0 ? 'text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200' : 'text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200'; }
+    } catch (e) { /* silent */ }
+}
+
+function requireAuth() {
+    if (!STATE.token) { toast('Please log in first', 'info'); showModal('login'); return false; }
+    return true;
+}
+
+// ── Fetch Transcript ──
+async function fetchTranscript() {
+    if (!requireAuth()) return;
+    const url = document.getElementById('youtube-url').value.trim();
+    if (!url) { toast('Please paste a YouTube URL', 'error'); return; }
+
+    document.getElementById('fetch-loading').classList.remove('hidden');
+    document.getElementById('fetch-btn').disabled = true;
+    document.getElementById('transcript-section').classList.add('hidden');
+    document.getElementById('ai-section').classList.add('hidden');
+    document.getElementById('result-section').classList.add('hidden');
+
+    try {
+        const res = await fetch(`${BASE}/api/youtube/transcript`, {
+            method: 'POST', headers: apiHeaders(), body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch transcript');
+
+        STATE.transcriptText = data.text;
+        document.getElementById('transcript-content').textContent = data.text;
+        document.getElementById('transcript-count').textContent = `${data.word_count} words`;
+        document.getElementById('transcript-lang').textContent = data.language || 'transcript';
+        document.getElementById('transcript-section').classList.remove('hidden');
+        document.getElementById('ai-section').classList.remove('hidden');
+        loadUsage();
+        document.getElementById('ai-section').scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        document.getElementById('fetch-loading').classList.add('hidden');
+        document.getElementById('fetch-btn').disabled = false;
+    }
+}
+
+// ── AI Generation ──
+async function runAI(action) {
+    if (!requireAuth()) return;
+    if (!STATE.transcriptText) { toast('Please fetch a transcript first', 'error'); return; }
+
+    const targetLang = document.getElementById('target-lang').value;
+    document.getElementById('result-content').classList.add('hidden');
+    document.getElementById('result-loading').classList.remove('hidden');
+    document.getElementById('result-section').classList.remove('hidden');
+
+    const titles = { summarize: 'AI Summary', keypoints: 'Key Points', translate: `Translation (${targetLang})` };
+    document.getElementById('result-title').textContent = titles[action] || 'AI Result';
+    document.querySelectorAll('.ai-btn').forEach(b => b.disabled = true);
+
+    let result = '';
+    try {
+        const resp = await fetch(`${BASE}/api/ai/generate`, {
+            method: 'POST',
+            headers: { ...apiHeaders(), 'Accept': 'text/event-stream' },
+            body: JSON.stringify({ action, content: STATE.transcriptText, target_lang: targetLang || 'Chinese' })
+        });
+        if (!resp.ok) {
+            const e = await resp.json(); throw new Error(e.error || `HTTP ${resp.status}`);
+        }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || !trimmed.startsWith('data: ')) continue;
+                const payload = trimmed.slice(6);
+                if (payload === '[DONE]') continue;
+                try {
+                    const parsed = JSON.parse(payload);
+                    if (parsed.error) throw new Error(parsed.error);
+                    if (parsed.content) {
+                        result += parsed.content;
+                        const el = document.getElementById('result-content');
+                        el.textContent = result;
+                        el.classList.remove('hidden');
+                        document.getElementById('result-loading').classList.add('hidden');
+                    }
+                } catch (e) {
+                    if (e.message && !e.message.includes('JSON')) throw e;
+                }
+            }
+        }
+
+        STATE.lastResult = result;
+        document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+        loadUsage();
+    } catch (e) {
+        toast(e.message, 'error');
+        document.getElementById('result-section').classList.add('hidden');
+    } finally {
+        document.querySelectorAll('.ai-btn').forEach(b => b.disabled = false);
+    }
+}
+
+// ── Result Actions ──
+async function copyResult() {
+    const text = STATE.lastResult || document.getElementById('result-content').textContent;
+    if (!text) { toast('Nothing to copy', 'error'); return; }
+    try { await navigator.clipboard.writeText(text); toast('Copied!', 'success'); }
+    catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('Copied!', 'success'); }
+}
+
+function downloadResult() {
+    const text = STATE.lastResult || document.getElementById('result-content').textContent;
+    if (!text) { toast('Nothing to download', 'error'); return; }
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `summarify-youtube-${Date.now()}.txt`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href); toast('Downloaded!', 'success');
+}
+
+// Enter key handler
+document.getElementById('youtube-url')?.addEventListener('keydown', e => { if (e.key === 'Enter') fetchTranscript(); });
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+    updateUI();
+    window.addEventListener('scroll', () => document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { hideModal('login'); hideModal('register'); } });
+});
+</script>
+</body>
+</html>

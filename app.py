@@ -37,6 +37,9 @@ from supabase import create_client, Client
 # Stripe
 import stripe
 
+# YouTube Transcript
+from youtube_transcript_api import YouTubeTranscriptApi
+
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 # ── App Initialization ────────────────────────────────────────────────
@@ -772,6 +775,102 @@ def parse_url(user_id):
         'word_count': len(text.split()),
         'remaining': remaining
     })
+
+# ── YouTube Transcript Endpoint ─────────────────────────────────────────
+
+def extract_youtube_video_id(url):
+    """Extract YouTube video ID from various URL formats."""
+    patterns = [
+        r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/shorts/|youtube\.com/live/)([A-Za-z0-9_-]{11})',
+        r'youtube\.com/watch\?.*v=([A-Za-z0-9_-]{11})',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    return None
+
+
+@app.route('/api/youtube/transcript', methods=['POST'])
+@require_auth
+def youtube_transcript(user_id):
+    allowed, remaining = check_daily_usage(user_id)
+    if not allowed:
+        return jsonify({
+            'error': 'Daily free limit reached (10/10). Upgrade to Premium for unlimited access.'
+        }), 429
+
+    data = request.get_json(silent=True) or {}
+    url = (data.get('url') or '').strip()
+
+    if not url:
+        return jsonify({'error': 'YouTube URL is required'}), 400
+
+    video_id = extract_youtube_video_id(url)
+    if not video_id:
+        return jsonify({'error': 'Invalid YouTube URL. Please provide a valid YouTube video link.'}), 400
+
+    try:
+        # Try getting English transcript first, fall back to any available
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+
+        # Priority: manual English > auto-generated English > any transcript
+        transcript = None
+        try:
+            transcript = transcript_list.find_transcript(['en'])
+        except Exception:
+            pass
+
+        if transcript is None:
+            try:
+                # Try auto-generated
+                for t in transcript_list:
+                    if t.is_generated:
+                        transcript = t
+                        break
+            except Exception:
+                pass
+
+        if transcript is None:
+            # Just take whatever is available
+            try:
+                transcript = next(iter(transcript_list))
+            except Exception:
+                pass
+
+        if transcript is None:
+            return jsonify({'error': 'No transcript available for this video. The video may not have captions.'}), 400
+
+        # Fetch the transcript segments
+        segments = transcript.fetch()
+        text = ' '.join(seg.get('text', '') for seg in segments if seg.get('text'))
+
+        if not text or not text.strip():
+            return jsonify({'error': 'Transcript is empty for this video.'}), 400
+
+        return jsonify({
+            'text': text.strip(),
+            'word_count': len(text.split()),
+            'remaining': remaining,
+            'video_id': video_id,
+            'language': transcript.language_code
+        })
+
+    except Exception as e:
+        error_msg = str(e)
+        if 'Video unavailable' in error_msg or 'private' in error_msg.lower():
+            return jsonify({'error': 'This video is unavailable (private, deleted, or not found).'}), 400
+        if 'disabled' in error_msg.lower():
+            return jsonify({'error': 'Transcripts are disabled for this video.'}), 400
+        return jsonify({'error': f'Failed to fetch transcript: {error_msg}'}), 500
+
+
+# ── YouTube Summarizer Page ──────────────────────────────────────────────
+
+@app.route('/youtube-summarizer')
+def youtube_summarizer_page():
+    return send_from_directory(app.static_folder, 'youtube.html')
+
 
 # ── AI Generate Endpoint ───────────────────────────────────────────────
 
