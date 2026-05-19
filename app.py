@@ -58,7 +58,12 @@ app.config['UPLOAD_FOLDER'] = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'uploads'
 )
 
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+try:
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+except OSError:
+    # Vercel / serverless: read-only filesystem — fall back to /tmp
+    app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ── AI Config (from .env) ─────────────────────────────────────────────
 
