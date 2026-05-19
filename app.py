@@ -824,17 +824,16 @@ def youtube_transcript(user_id):
 
     try:
         # Try English transcript first, fall back to any available
-        ytt = YouTubeTranscriptApi()
         segments = None
         language = 'en'
         try:
-            segments = ytt.fetch(video_id, languages=['en'])
+            segments = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
         except Exception:
             pass
 
         if segments is None:
             try:
-                segments = ytt.fetch(video_id)
+                segments = YouTubeTranscriptApi.get_transcript(video_id)
                 language = 'auto'
             except Exception as e2:
                 return jsonify({'error': f'No transcript available for this video: {str(e2)}'}), 400
