@@ -32,4 +32,7 @@
             }
         }
     </script>
+    <!-- Prevent FOUC: hide auth buttons if already logged in -->
+    <script>if(localStorage.getItem('summarify_token'))document.documentElement.dataset.loggedIn='true'</script>
+    <style>[data-logged-in="true"] #nav-auth{display:none!important}[data-logged-in="true"] #nav-user{display:flex!important}</style>
 </head>
