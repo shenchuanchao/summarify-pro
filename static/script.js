@@ -150,11 +150,19 @@ function updateUI() {
     const planBadge = document.getElementById('plan-badge');
     const upgradeBtn = document.getElementById('upgrade-btn');
     const pricingUpgradeBtn = document.getElementById('btn-upgrade-premium');
+    // Mobile menu user section
+    const mobileMenuUser = document.getElementById('mobile-menu-user');
+    const mobileUserEmail = document.getElementById('mobile-user-email');
 
     if (STATE.token && STATE.user) {
         navAuth.classList.add('hidden');
         navUser.classList.remove('hidden');
         userEmail.textContent = STATE.user.email;
+
+        if (mobileMenuUser && mobileUserEmail) {
+            mobileUserEmail.textContent = STATE.user.email;
+            mobileMenuUser.classList.remove('hidden');
+        }
 
         if (STATE.user.plan === 'premium') {
             if (planBadge) planBadge.classList.remove('hidden');
@@ -174,6 +182,9 @@ function updateUI() {
         if (upgradeBtn) upgradeBtn.classList.add('hidden');
         if (planBadge) planBadge.classList.add('hidden');
         if (pricingUpgradeBtn) pricingUpgradeBtn.classList.remove('hidden');
+        // Hide mobile menu user section
+        if (mobileMenuUser) mobileMenuUser.classList.add('hidden');
+        if (mobileUserEmail) mobileUserEmail.textContent = '';
     }
 }
 
@@ -253,6 +264,8 @@ function logout() {
     updateUI();
     document.getElementById('parsed-section').classList.add('hidden');
     document.getElementById('result-section').classList.add('hidden');
+    // Close mobile menu if open
+    if (typeof closeMobileMenu === 'function') closeMobileMenu();
     toast('Signed out');
 }
 

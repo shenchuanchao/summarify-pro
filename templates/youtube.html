@@ -255,6 +255,7 @@ function logout() {
     document.getElementById('transcript-section').classList.add('hidden');
     document.getElementById('ai-section').classList.add('hidden');
     document.getElementById('result-section').classList.add('hidden');
+    if (typeof closeMobileMenu === 'function') closeMobileMenu();
     toast('Signed out');
 }
 
@@ -263,14 +264,22 @@ function updateUI() {
     const navUser = document.getElementById('nav-user');
     const userEmail = document.getElementById('user-email');
     const planBadge = document.getElementById('plan-badge');
+    const mobileMenuUser = document.getElementById('mobile-menu-user');
+    const mobileUserEmail = document.getElementById('mobile-user-email');
     if (STATE.token && STATE.user) {
         navAuth.classList.add('hidden'); navUser.classList.remove('hidden');
         userEmail.textContent = STATE.user.email;
         planBadge.classList.toggle('hidden', STATE.user.plan !== 'premium');
+        if (mobileMenuUser && mobileUserEmail) {
+            mobileUserEmail.textContent = STATE.user.email;
+            mobileMenuUser.classList.remove('hidden');
+        }
         loadUsage();
     } else {
         navAuth.classList.remove('hidden'); navUser.classList.add('hidden');
         planBadge.classList.add('hidden'); document.getElementById('usage-badge').textContent = '';
+        if (mobileMenuUser) mobileMenuUser.classList.add('hidden');
+        if (mobileUserEmail) mobileUserEmail.textContent = '';
     }
 }
 

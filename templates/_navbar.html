@@ -45,6 +45,13 @@
         <div id="mobile-menu" class="hidden sm:hidden pb-4 space-y-1 animate-fade-in">
             <a href="/" class="block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if active == 'summarize' %}text-brand-700 bg-brand-50 font-semibold{% else %}text-gray-700 hover:text-brand-700 hover:bg-brand-50{% endif %}">📄 Summarize</a>
             <a href="/youtube-summarizer" class="block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if active == 'youtube' %}text-red-600 bg-red-50 font-semibold{% else %}text-gray-700 hover:text-red-600 hover:bg-red-50{% endif %}">📺 YouTube Summarizer</a>
+            <!-- Mobile Menu User (logged in only) -->
+            <div id="mobile-menu-user" class="hidden pt-2 mt-2 border-t border-gray-100">
+                <div class="flex items-center justify-between px-3 py-2.5">
+                    <span id="mobile-user-email" class="text-sm text-gray-500 truncate max-w-[180px]"></span>
+                    <button onclick="closeMobileMenu(); logout()" class="text-sm text-red-500 hover:text-red-600 font-medium shrink-0 ml-2">Sign out</button>
+                </div>
+            </div>
         </div>
     </div>
 </nav>
@@ -56,21 +63,20 @@ function toggleMobileMenu() {
     const close = document.getElementById('close-icon');
     const isOpen = !menu.classList.contains('hidden');
     if (isOpen) {
-        menu.classList.add('hidden');
-        hamburger.classList.remove('hidden');
-        close.classList.add('hidden');
+        closeMobileMenu();
     } else {
         menu.classList.remove('hidden');
         hamburger.classList.add('hidden');
         close.classList.remove('hidden');
     }
 }
+function closeMobileMenu() {
+    document.getElementById('mobile-menu').classList.add('hidden');
+    document.getElementById('hamburger-icon').classList.remove('hidden');
+    document.getElementById('close-icon').classList.add('hidden');
+}
 // Close mobile menu on resize to desktop
 window.addEventListener('resize', () => {
-    if (window.innerWidth >= 640) {
-        document.getElementById('mobile-menu')?.classList.add('hidden');
-        document.getElementById('hamburger-icon')?.classList.remove('hidden');
-        document.getElementById('close-icon')?.classList.add('hidden');
-    }
+    if (window.innerWidth >= 640) closeMobileMenu();
 });
 </script>

@@ -47,20 +47,19 @@ function toggleMobileMenu() {
     const close = document.getElementById('close-icon');
     const isOpen = !menu.classList.contains('hidden');
     if (isOpen) {
-        menu.classList.add('hidden');
-        hamburger.classList.remove('hidden');
-        close.classList.add('hidden');
+        closeMobileMenu();
     } else {
         menu.classList.remove('hidden');
         hamburger.classList.add('hidden');
         close.classList.remove('hidden');
     }
 }
+function closeMobileMenu() {
+    document.getElementById('mobile-menu').classList.add('hidden');
+    document.getElementById('hamburger-icon').classList.remove('hidden');
+    document.getElementById('close-icon').classList.add('hidden');
+}
 window.addEventListener('resize', () => {
-    if (window.innerWidth >= 640) {
-        document.getElementById('mobile-menu')?.classList.add('hidden');
-        document.getElementById('hamburger-icon')?.classList.remove('hidden');
-        document.getElementById('close-icon')?.classList.add('hidden');
-    }
+    if (window.innerWidth >= 640) closeMobileMenu();
 });
 </script>
