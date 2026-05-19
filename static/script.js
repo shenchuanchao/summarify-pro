@@ -185,6 +185,7 @@ async function loadUsage() {
         if (data.plan === 'premium') {
             badge.classList.add('hidden');
         } else {
+            badge.classList.remove('hidden');
             badge.textContent = `${data.remaining} / ${data.daily_limit} free`;
             badge.className = data.remaining === 0
                 ? 'text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200'
