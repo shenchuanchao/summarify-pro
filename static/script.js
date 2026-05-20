@@ -14,11 +14,26 @@ const STATE = {
     lastActionResult: ''
 };
 
+// ── Anonymous ID Helper ───────────────────────────────────────────────
+function getOrCreateAnonId() {
+    let anonId = localStorage.getItem('summarify_anon_id');
+    if (!anonId) {
+        anonId = crypto.randomUUID();
+        localStorage.setItem('summarify_anon_id', anonId);
+    }
+    return anonId;
+}
+
 const API = (() => {
     const BASE = 'https://summarify-pro-production.up.railway.app';
     const headers = () => {
         const h = { 'Content-Type': 'application/json' };
-        if (STATE.token) h['Authorization'] = `Bearer ${STATE.token}`;
+        if (STATE.token) {
+            h['Authorization'] = `Bearer ${STATE.token}`;
+        } else {
+            // Anonymous mode — send X-Anon-Id header
+            h['X-Anon-Id'] = getOrCreateAnonId();
+        }
         return h;
     };
 
@@ -38,12 +53,14 @@ const API = (() => {
         parsePDF: (file) => {
             const fd = new FormData();
             fd.append('file', file);
-            return fetch(`${BASE}/api/parse/pdf`, { method: 'POST', headers: { 'Authorization': `Bearer ${STATE.token}` }, body: fd }).then(handle);
+            const h = STATE.token ? { 'Authorization': `Bearer ${STATE.token}` } : { 'X-Anon-Id': getOrCreateAnonId() };
+            return fetch(`${BASE}/api/parse/pdf`, { method: 'POST', headers: h, body: fd }).then(handle);
         },
         parseWord: (file) => {
             const fd = new FormData();
             fd.append('file', file);
-            return fetch(`${BASE}/api/parse/word`, { method: 'POST', headers: { 'Authorization': `Bearer ${STATE.token}` }, body: fd }).then(handle);
+            const h = STATE.token ? { 'Authorization': `Bearer ${STATE.token}` } : { 'X-Anon-Id': getOrCreateAnonId() };
+            return fetch(`${BASE}/api/parse/word`, { method: 'POST', headers: h, body: fd }).then(handle);
         },
         parseURL: (url) =>
             fetch(`${BASE}/api/parse/url`, { method: 'POST', headers: headers(), body: JSON.stringify({ url }) }).then(handle),
@@ -181,7 +198,7 @@ function updateUI() {
     } else {
         navAuth.classList.remove('hidden');
         navUser.classList.add('hidden');
-        usageBadge.textContent = '';
+        loadUsage(); // Show anonymous usage for logged-out users
         if (upgradeBtn) upgradeBtn.classList.add('hidden');
         if (planBadge) planBadge.classList.add('hidden');
         if (pricingUpgradeBtn) pricingUpgradeBtn.classList.remove('hidden');
@@ -192,12 +209,19 @@ function updateUI() {
 }
 
 async function loadUsage() {
-    if (!STATE.token) return;
+    const badge = document.getElementById('usage-badge');
+    if (!badge) return;
     try {
         const data = await API.usage();
-        const badge = document.getElementById('usage-badge');
         if (data.plan === 'premium') {
             badge.classList.add('hidden');
+        } else if (data.plan === 'anonymous') {
+            // Anonymous user — show 3 free uses remaining
+            badge.classList.remove('hidden');
+            badge.textContent = `${data.remaining} / ${data.daily_limit} free (no sign-up)`;
+            badge.className = data.remaining === 0
+                ? 'text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200'
+                : 'text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200';
         } else {
             badge.classList.remove('hidden');
             badge.textContent = `${data.remaining} / ${data.daily_limit} free`;
@@ -206,7 +230,7 @@ async function loadUsage() {
                 : 'text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200';
         }
     } catch (e) {
-        // silently fail
+        // silently fail — anonymous users may not have usage endpoint response yet
     }
 }
 
@@ -249,7 +273,7 @@ async function handleRegister(e) {
         localStorage.setItem('summarify_user', JSON.stringify(data.user));
         updateUI();
         hideModal('register');
-        toast('Account created! You have 3 free uses today.', 'success');
+        toast('Account created! You now have 10 free uses per day.', 'success');
     } catch (e) {
         toast(e.message, 'error');
     } finally {
@@ -532,9 +556,8 @@ function downloadResult() {
 // ── Auth Check ─────────────────────────────────────────────────────────
 function requireAuth() {
     if (!STATE.token) {
-        toast('Please log in or create an account first', 'info');
-        showModal('login');
-        return false;
+        // Allow anonymous usage (no sign-up required)
+        return true;
     }
     return true;
 }

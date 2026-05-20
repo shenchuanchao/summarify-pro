@@ -142,6 +142,31 @@ def require_auth(f):
         return f(user_id, *args, **kwargs)
     return decorated
 
+def flex_auth(f):
+    """
+    Flexible auth: allows both authenticated (JWT) and anonymous (X-Anon-Id) users.
+    Passes (user_id, anon_id, *args, **kwargs) to the endpoint.
+    - user_id: str if authenticated, None if anonymous
+    - anon_id: str from X-Anon-Id header, None if authenticated
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        # Try JWT auth first
+        auth_header = request.headers.get('Authorization', '')
+        token = auth_header.replace('Bearer ', '').strip()
+        if token:
+            user_id = verify_token(token)
+            if user_id:
+                return f(user_id, None, *args, **kwargs)
+        # Anonymous — require X-Anon-Id header
+        anon_id = request.headers.get('X-Anon-Id', '').strip()
+        if not anon_id or len(anon_id) > 64:
+            return jsonify({'error': 'Login required or provide X-Anon-Id header'}), 401
+        if not re.match(r'^[a-zA-Z0-9\-]+$', anon_id):
+            return jsonify({'error': 'Invalid X-Anon-Id format'}), 400
+        return f(None, anon_id, *args, **kwargs)
+    return decorated
+
 # ── Rate Limiter (in-memory IP-based) ──────────────────────────────
 
 _rate_limits: dict = defaultdict(list)
@@ -204,6 +229,51 @@ def check_daily_usage(user_id: str):
         remaining = 10 - new_count
         return True, remaining
 
+    return False, 0
+
+# ── Anonymous Usage Tracking ──────────────────────────────────────────
+
+ANON_DAILY_LIMIT = 3
+
+def check_anon_usage(anon_id: str, ip: str):
+    """
+    Check and increment anonymous daily usage.
+    Returns (allowed: bool, remaining: int).
+    """
+    sb = get_supabase()
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    try:
+        res = sb.table('anonymous_usage').select('*').eq('anon_id', anon_id).eq('usage_date', today).execute()
+        if res.data:
+            record = res.data[0]
+            if record['usage_count'] >= ANON_DAILY_LIMIT:
+                return False, 0
+            new_count = record['usage_count'] + 1
+            sb.table('anonymous_usage').update({'usage_count': new_count}).eq('id', record['id']).execute()
+            return True, ANON_DAILY_LIMIT - new_count
+        else:
+            sb.table('anonymous_usage').insert({
+                'anon_id': anon_id,
+                'ip_address': ip,
+                'usage_date': today,
+                'usage_count': 1
+            }).execute()
+            return True, ANON_DAILY_LIMIT - 1
+    except Exception as e:
+        # Log but don't block — fallback: allow usage
+        print(f'[anon_usage] Error checking usage for {anon_id}: {e}')
+        return True, ANON_DAILY_LIMIT
+
+
+def check_usage(user_id=None, anon_id=None, ip=None):
+    """
+    Unified usage check — authenticated or anonymous.
+    Returns (allowed: bool, remaining: int or None for unlimited).
+    """
+    if user_id:
+        return check_daily_usage(user_id)
+    if anon_id:
+        return check_anon_usage(anon_id, ip or request.remote_addr or 'unknown')
     return False, 0
 
 # ── AI Client ──────────────────────────────────────────────────────────
@@ -481,39 +551,52 @@ def login():
 
 
 @app.route('/api/user/usage', methods=['GET'])
-@require_auth
-def get_usage(user_id):
-    sb = get_supabase()
-    res = sb.table('users').select(
-        'plan, daily_usage_count, last_usage_date'
-    ).eq('id', user_id).execute()
+@flex_auth
+def get_usage(user_id, anon_id):
+    if user_id:
+        sb = get_supabase()
+        res = sb.table('users').select(
+            'plan, daily_usage_count, last_usage_date'
+        ).eq('id', user_id).execute()
 
-    if not res.data:
-        return jsonify({'error': 'User not found'}), 404
+        if not res.data:
+            return jsonify({'error': 'User not found'}), 404
 
-    user = res.data[0]
-    today = datetime.datetime.now().strftime('%Y-%m-%d')
+        user = res.data[0]
+        today = datetime.datetime.now().strftime('%Y-%m-%d')
 
-    if user['plan'] == 'premium':
+        if user['plan'] == 'premium':
+            return jsonify({
+                'plan': 'premium',
+                'daily_limit': None,
+                'used_today': 0,
+                'remaining': None
+            })
+
+        if user.get('last_usage_date') != today:
+            used, remaining = 0, 10
+        else:
+            used = user.get('daily_usage_count', 0)
+            remaining = max(0, 10 - used)
+
         return jsonify({
-            'plan': 'premium',
-            'daily_limit': None,
-            'used_today': 0,
-            'remaining': None
+            'plan': 'free',
+            'daily_limit': 10,
+            'used_today': used,
+            'remaining': remaining
         })
-
-    if user.get('last_usage_date') != today:
-        used, remaining = 0, 10
     else:
-        used = user.get('daily_usage_count', 0)
-        remaining = max(0, 10 - used)
-
-    return jsonify({
-        'plan': 'free',
-        'daily_limit': 10,
-        'used_today': used,
-        'remaining': remaining
-    })
+        # Anonymous user
+        sb = get_supabase()
+        today = datetime.datetime.now().strftime('%Y-%m-%d')
+        res = sb.table('anonymous_usage').select('usage_count').eq('anon_id', anon_id).eq('usage_date', today).execute()
+        used = res.data[0]['usage_count'] if res.data else 0
+        return jsonify({
+            'plan': 'anonymous',
+            'daily_limit': ANON_DAILY_LIMIT,
+            'used_today': used,
+            'remaining': max(0, ANON_DAILY_LIMIT - used)
+        })
 
 
 # ── Feedback ───────────────────────────────────────────────────────────
@@ -686,13 +769,13 @@ def get_stripe_status():
 # ── Parse Endpoints ────────────────────────────────────────────────────
 
 @app.route('/api/parse/pdf', methods=['POST'])
-@require_auth
-def parse_pdf(user_id):
-    allowed, remaining = check_daily_usage(user_id)
+@flex_auth
+def parse_pdf(user_id, anon_id):
+    allowed, remaining = check_usage(user_id, anon_id, request.remote_addr)
     if not allowed:
-        return jsonify({
-            'error': 'Daily free limit reached (10/10). Upgrade to Premium for unlimited access.'
-        }), 429
+        limit = 10 if user_id else ANON_DAILY_LIMIT
+        msg = f'Daily free limit reached ({limit}/{limit}).' + (' Upgrade to Premium for unlimited access.' if user_id else ' Sign up for 10 free uses per day!')
+        return jsonify({'error': msg}), 429
 
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
@@ -729,13 +812,13 @@ def parse_pdf(user_id):
 
 
 @app.route('/api/parse/word', methods=['POST'])
-@require_auth
-def parse_word(user_id):
-    allowed, remaining = check_daily_usage(user_id)
+@flex_auth
+def parse_word(user_id, anon_id):
+    allowed, remaining = check_usage(user_id, anon_id, request.remote_addr)
     if not allowed:
-        return jsonify({
-            'error': 'Daily free limit reached (10/10). Upgrade to Premium for unlimited access.'
-        }), 429
+        limit = 10 if user_id else ANON_DAILY_LIMIT
+        msg = f'Daily free limit reached ({limit}/{limit}).' + (' Upgrade to Premium for unlimited access.' if user_id else ' Sign up for 10 free uses per day!')
+        return jsonify({'error': msg}), 429
 
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
@@ -777,13 +860,13 @@ def parse_word(user_id):
 
 
 @app.route('/api/parse/url', methods=['POST'])
-@require_auth
-def parse_url(user_id):
-    allowed, remaining = check_daily_usage(user_id)
+@flex_auth
+def parse_url(user_id, anon_id):
+    allowed, remaining = check_usage(user_id, anon_id, request.remote_addr)
     if not allowed:
-        return jsonify({
-            'error': 'Daily free limit reached (10/10). Upgrade to Premium for unlimited access.'
-        }), 429
+        limit = 10 if user_id else ANON_DAILY_LIMIT
+        msg = f'Daily free limit reached ({limit}/{limit}).' + (' Upgrade to Premium for unlimited access.' if user_id else ' Sign up for 10 free uses per day!')
+        return jsonify({'error': msg}), 429
 
     data = request.get_json(silent=True) or {}
     url = (data.get('url') or '').strip()
@@ -827,13 +910,13 @@ def extract_youtube_video_id(url):
 
 
 @app.route('/api/youtube/transcript', methods=['POST'])
-@require_auth
-def youtube_transcript(user_id):
-    allowed, remaining = check_daily_usage(user_id)
+@flex_auth
+def youtube_transcript(user_id, anon_id):
+    allowed, remaining = check_usage(user_id, anon_id, request.remote_addr)
     if not allowed:
-        return jsonify({
-            'error': 'Daily free limit reached (10/10). Upgrade to Premium for unlimited access.'
-        }), 429
+        limit = 10 if user_id else ANON_DAILY_LIMIT
+        msg = f'Daily free limit reached ({limit}/{limit}).' + (' Upgrade to Premium for unlimited access.' if user_id else ' Sign up for 10 free uses per day!')
+        return jsonify({'error': msg}), 429
 
     data = request.get_json(silent=True) or {}
     url = (data.get('url') or '').strip()
@@ -896,8 +979,8 @@ def youtube_summarizer_page():
 # ── AI Generate Endpoint ───────────────────────────────────────────────
 
 @app.route('/api/ai/generate', methods=['POST'])
-@require_auth
-def ai_generate(user_id):
+@flex_auth
+def ai_generate(user_id, anon_id):
     data = request.get_json(silent=True) or {}
     action = (data.get('action') or '').strip()
     content = (data.get('content') or '').strip()

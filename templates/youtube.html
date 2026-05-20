@@ -172,9 +172,23 @@ const STATE = {
 
 const BASE = 'https://summarify-pro-production.up.railway.app';
 
+// ── Anonymous ID Helper ──
+function getOrCreateAnonId() {
+    let anonId = localStorage.getItem('summarify_anon_id');
+    if (!anonId) {
+        anonId = crypto.randomUUID();
+        localStorage.setItem('summarify_anon_id', anonId);
+    }
+    return anonId;
+}
+
 const apiHeaders = () => {
     const h = { 'Content-Type': 'application/json' };
-    if (STATE.token) h['Authorization'] = `Bearer ${STATE.token}`;
+    if (STATE.token) {
+        h['Authorization'] = `Bearer ${STATE.token}`;
+    } else {
+        h['X-Anon-Id'] = getOrCreateAnonId();
+    }
     return h;
 };
 
@@ -243,7 +257,7 @@ async function handleRegister(e) {
         STATE.token = data.token; STATE.user = data.user;
         localStorage.setItem('summarify_token', data.token);
         localStorage.setItem('summarify_user', JSON.stringify(data.user));
-        updateUI(); hideModal('register'); toast('Account created! 10 free uses today.', 'success');
+        updateUI(); hideModal('register'); toast('Account created! You now have 10 free uses per day.', 'success');
     } catch (e) { toast(e.message, 'error'); }
     finally { btn.disabled = false; btn.textContent = 'Create account'; }
 }
@@ -277,26 +291,37 @@ function updateUI() {
         loadUsage();
     } else {
         navAuth.classList.remove('hidden'); navUser.classList.add('hidden');
-        planBadge.classList.add('hidden'); document.getElementById('usage-badge').textContent = '';
+        planBadge.classList.add('hidden');
+        loadUsage(); // Show anonymous usage for logged-out users
         if (mobileMenuUser) mobileMenuUser.classList.add('hidden');
         if (mobileUserEmail) mobileUserEmail.textContent = '';
     }
 }
 
 async function loadUsage() {
-    if (!STATE.token) return;
+    const badge = document.getElementById('usage-badge');
+    if (!badge) return;
     try {
         const res = await fetch(`${BASE}/api/user/usage`, { headers: apiHeaders() });
         if (!res.ok) return;
         const data = await res.json();
-        const badge = document.getElementById('usage-badge');
         if (data.plan === 'premium') { badge.classList.add('hidden'); }
-        else { badge.textContent = `${data.remaining} / ${data.daily_limit} free`; badge.className = data.remaining === 0 ? 'text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200' : 'text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200'; }
+        else if (data.plan === 'anonymous') {
+            badge.classList.remove('hidden');
+            badge.textContent = `${data.remaining} / ${data.daily_limit} free (no sign-up)`;
+            badge.className = data.remaining === 0 ? 'text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200' : 'text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200';
+        } else {
+            badge.classList.remove('hidden');
+            badge.textContent = `${data.remaining} / ${data.daily_limit} free`;
+            badge.className = data.remaining === 0 ? 'text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200' : 'text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200'; }
     } catch (e) { /* silent */ }
 }
 
 function requireAuth() {
-    if (!STATE.token) { toast('Please log in first', 'info'); showModal('login'); return false; }
+    if (!STATE.token) {
+        // Allow anonymous usage (no sign-up required)
+        return true;
+    }
     return true;
 }
 
