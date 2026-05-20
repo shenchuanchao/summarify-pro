@@ -48,9 +48,9 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ORIGINS', '').strip()
 if CORS_ALLOWED_ORIGINS:
     _origins = [o.strip() for o in CORS_ALLOWED_ORIGINS.split(',') if o.strip()]
-    CORS(app, resources={r"/api/*": {"origins": _origins}})
+    CORS(app, resources={r"/api/*": {"origins": _origins, "allow_headers": ["Content-Type", "Authorization", "X-Anon-Id"], "supports_credentials": True}})
 else:
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app, resources={r"/api/*": {"origins": "*", "allow_headers": ["Content-Type", "Authorization", "X-Anon-Id"]}})
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(32))
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
