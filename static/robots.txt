@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://www.summarifypro.com/sitemap.xml

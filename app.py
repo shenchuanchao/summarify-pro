@@ -381,6 +381,14 @@ def register_page():
 def privacy_page():
     return render_template('privacy.html')
 
+@app.route('/ai-summarize')
+def ai_summarize_page():
+    return render_template('ai-summarize.html')
+
+@app.route('/pdf-summarizer')
+def pdf_summarizer_page():
+    return render_template('pdf-summarizer.html')
+
 # ── Auth Endpoints ─────────────────────────────────────────────────────
 
 @app.route('/api/user/register', methods=['POST'])
