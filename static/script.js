@@ -267,6 +267,7 @@ function logout() {
     // Close mobile menu if open
     if (typeof closeMobileMenu === 'function') closeMobileMenu();
     toast('Signed out');
+    setTimeout(() => { window.location.href = '/'; }, 600);
 }
 
 // ── Modals ──────────────────────────────────────────────────────────────
