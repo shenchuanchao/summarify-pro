@@ -76,8 +76,8 @@ OPENAI_MODEL   = os.getenv('OPENAI_MODEL', 'glm-4-flash')
 
 SUPABASE_URL = os.getenv('PUBLIC_SUPABASE_URL', '')
 SUPABASE_KEY = os.getenv(
-    'SUPABASE_SERVICE_ROLE_KEY'
-) or os.getenv('PUBLIC_SUPABASE_ANON_KEY', '')
+    'SUPABASE_SERVICE_ROLE_KEY', ''
+).strip() or os.getenv('PUBLIC_SUPABASE_ANON_KEY', '').strip()
 
 _supabase_client: Client | None = None
 
