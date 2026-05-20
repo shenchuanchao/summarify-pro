@@ -511,8 +511,7 @@ def get_usage(user_id):
 # ── Feedback ───────────────────────────────────────────────────────────
 
 @app.route('/api/user/feedback', methods=['POST'])
-@require_auth
-def submit_feedback(user_id):
+def submit_feedback():
     data = request.get_json() or {}
     content = (data.get('content', '') or '').strip()
     if not content:
@@ -520,11 +519,22 @@ def submit_feedback(user_id):
     if len(content) > 2000:
         return jsonify({'error': 'Feedback too long (max 2000 characters)'}), 400
 
+    # Optional: attach user_id if logged in
+    user_id = None
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        try:
+            token = auth_header.split(' ', 1)[1]
+            payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            user_id = payload.get('user_id')
+        except Exception:
+            pass
+
     sb = get_supabase()
-    sb.table('feedback').insert({
-        'user_id': user_id,
-        'content': content
-    }).execute()
+    insert_data = {'content': content}
+    if user_id:
+        insert_data['user_id'] = user_id
+    sb.table('feedback').insert(insert_data).execute()
 
     return jsonify({'success': True, 'message': 'Thank you for your feedback!'})
 
