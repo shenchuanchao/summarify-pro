@@ -131,6 +131,7 @@ async function handleStripeReturn() {
 let _toastTimer;
 function toast(msg, type = 'info') {
     const el = document.getElementById('toast');
+    if (!el) return;
     clearTimeout(_toastTimer);
     el.textContent = msg;
     el.className = `fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl shadow-xl text-sm font-medium max-w-xs animate-fade-in ${
@@ -154,10 +155,12 @@ function updateUI() {
     const mobileMenuUser = document.getElementById('mobile-menu-user');
     const mobileUserEmail = document.getElementById('mobile-user-email');
 
+    if (!navAuth && !navUser) return;
+
     if (STATE.token && STATE.user) {
-        navAuth.classList.add('hidden');
-        navUser.classList.remove('hidden');
-        userEmail.textContent = STATE.user.email;
+        if (navAuth) navAuth.classList.add('hidden');
+        if (navUser) navUser.classList.remove('hidden');
+        if (userEmail) userEmail.textContent = STATE.user.email;
 
         if (mobileMenuUser && mobileUserEmail) {
             mobileUserEmail.textContent = STATE.user.email;
@@ -335,6 +338,8 @@ function setupDropzone(type) {
     const info = document.getElementById(`${type}-file-info`);
     const name = document.getElementById(`${type}-file-name`);
 
+    if (!dz || !input) return;
+
     dz.addEventListener('click', () => input.click());
     dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
     dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
@@ -371,6 +376,7 @@ function clearFile(type) {
 
 function updateParseButton() {
     const actions = document.getElementById('parse-actions');
+    if (!actions) return;
     const shouldShow = (STATE.currentTab === 'pdf' && STATE.pdfFile) ||
                        (STATE.currentTab === 'word' && STATE.wordFile) ||
                        STATE.currentTab === 'url';
@@ -422,7 +428,8 @@ async function handleParse() {
     }
 }
 
-document.getElementById('parse-btn').addEventListener('click', handleParse);
+const parseBtn = document.getElementById('parse-btn');
+if (parseBtn) parseBtn.addEventListener('click', handleParse);
 
 function showParseLoading(show) {
     document.getElementById('parse-loading').classList.toggle('hidden', !show);
@@ -546,9 +553,12 @@ document.addEventListener('DOMContentLoaded', () => {
     updateParseButton();
 
     // Scroll shadow on navbar
-    window.addEventListener('scroll', () => {
-        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
-    });
+    const navbar = document.getElementById('navbar');
+    if (navbar) {
+        window.addEventListener('scroll', () => {
+            navbar.classList.toggle('scrolled', window.scrollY > 10);
+        });
+    }
 
     // Close modals on Escape
     document.addEventListener('keydown', e => {
