@@ -208,29 +208,34 @@ function updateUI() {
     }
 }
 
+let _loadUsageId = 0; // guard against stale async responses
+
 async function loadUsage() {
     const badge = document.getElementById('usage-badge');
     if (!badge) return;
+    const myId = ++_loadUsageId;
     try {
         const data = await API.usage();
+        // Discard if another loadUsage was triggered while we waited
+        if (myId !== _loadUsageId) return;
+
         if (data.plan === 'premium') {
             badge.classList.add('hidden');
         } else if (data.plan === 'anonymous') {
-            // Anonymous user — show 3 free uses remaining
             badge.classList.remove('hidden');
-            badge.textContent = `${data.remaining} / ${data.daily_limit} free (no sign-up)`;
-            badge.className = data.remaining === 0
-                ? 'text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200'
-                : 'text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200';
+            badge.textContent = `${data.remaining} / ${data.daily_limit} free`;
+            badge.className = 'text-xs font-medium px-2 sm:px-3 py-1 rounded-full border truncate max-w-[160px] sm:max-w-[200px] ' + (data.remaining === 0
+                ? 'bg-red-50 text-red-700 border-red-200'
+                : 'bg-brand-50 text-brand-700 border-brand-200');
         } else {
             badge.classList.remove('hidden');
             badge.textContent = `${data.remaining} / ${data.daily_limit} free`;
-            badge.className = data.remaining === 0
-                ? 'text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200'
-                : 'text-xs font-medium bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200';
+            badge.className = 'text-xs font-medium px-2 sm:px-3 py-1 rounded-full border truncate max-w-[160px] sm:max-w-[200px] ' + (data.remaining === 0
+                ? 'bg-red-50 text-red-700 border-red-200'
+                : 'bg-brand-50 text-brand-700 border-brand-200');
         }
     } catch (e) {
-        // silently fail — anonymous users may not have usage endpoint response yet
+        // silently fail
     }
 }
 
