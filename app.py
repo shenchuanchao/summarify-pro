@@ -948,6 +948,79 @@ def parse_url(user_id, anon_id):
 
 # ── YouTube Transcript Endpoint ─────────────────────────────────────────
 
+def _fetch_transcript_direct(video_id: str):
+    """
+    Fallback: fetch YouTube captions via direct HTTP (no library dependency).
+    Parses the ytInitialPlayerResponse JSON from the video page.
+    Returns (transcript_text: str, language_code: str).
+    """
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
+
+    # 1. Fetch video page HTML
+    resp = requests.get(f'https://www.youtube.com/watch?v={video_id}', headers=headers, timeout=15)
+    resp.raise_for_status()
+
+    # 2. Extract ytInitialPlayerResponse JSON with brace-counting
+    marker = 'ytInitialPlayerResponse'
+    start = resp.text.find(marker)
+    if start == -1:
+        raise Exception('Could not extract player data from YouTube page')
+
+    json_start = resp.text.index('{', start)
+    depth = 0
+    json_end = json_start
+    for i in range(json_start, len(resp.text)):
+        if resp.text[i] == '{':
+            depth += 1
+        elif resp.text[i] == '}':
+            depth -= 1
+            if depth == 0:
+                json_end = i + 1
+                break
+
+    pr = json.loads(resp.text[json_start:json_end])
+
+    # 3. Extract caption tracks
+    tracks = (
+        pr.get('captions', {})
+        .get('playerCaptionsTracklistRenderer', {})
+        .get('captionTracks', [])
+    )
+    if not tracks:
+        raise Exception('No captions available for this video')
+
+    # 4. Pick English track, fallback to first available
+    track = next((t for t in tracks if t.get('languageCode') == 'en'), tracks[0])
+    base_url = track.get('baseUrl')
+    if not base_url:
+        raise Exception('Could not get caption download URL')
+
+    # 5. Fetch & parse caption XML
+    cap_resp = requests.get(base_url, headers=headers, timeout=15)
+    cap_resp.raise_for_status()
+
+    import xml.etree.ElementTree as ET
+    root = ET.fromstring(cap_resp.text)
+
+    parts = []
+    for elem in root.iter():
+        tag = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
+        if tag in ('p', 'text'):
+            t = elem.text or ''
+            t = re.sub(r'<[^>]+>', '', t)
+            t = t.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&#39;', "'").replace('&quot;', '"').replace('&apos;', "'")
+            if t.strip():
+                parts.append(t.strip())
+
+    if not parts:
+        raise Exception('Caption text is empty')
+
+    return ' '.join(parts), track.get('languageCode', 'unknown')
+
+
 def extract_youtube_video_id(url):
     """Extract YouTube video ID from various URL formats."""
     patterns = [
@@ -993,6 +1066,14 @@ def youtube_transcript(user_id, anon_id):
             try:
                 segments = YouTubeTranscriptApi.get_transcript(video_id)
                 language = 'auto'
+            except Exception:
+                pass
+
+        # Fallback: direct HTTP fetch (no library needed)
+        if segments is None:
+            try:
+                transcript_text, language = _fetch_transcript_direct(video_id)
+                segments = [{'text': transcript_text}]
             except Exception as e2:
                 return jsonify({'error': f'No transcript available for this video: {str(e2)}'}), 400
 
