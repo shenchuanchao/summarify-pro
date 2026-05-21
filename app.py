@@ -1071,18 +1071,22 @@ def youtube_transcript(user_id, anon_id):
         except Exception:
             pass
 
-        # Fallback: youtube-transcript-api library
+        # Fallback: youtube-transcript-api library (v1.2.4+ uses .fetch() not .get_transcript())
         if segments is None:
             try:
-                segments = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-                language = 'en'
+                ytt_api = YouTubeTranscriptApi()
+                fetched = ytt_api.fetch(video_id, languages=['en'])
+                segments = fetched.to_raw_data()
+                language = fetched.language_code or 'en'
             except Exception:
                 pass
 
         if segments is None:
             try:
-                segments = YouTubeTranscriptApi.get_transcript(video_id)
-                language = 'auto'
+                ytt_api = YouTubeTranscriptApi()
+                fetched = ytt_api.fetch(video_id)
+                segments = fetched.to_raw_data()
+                language = fetched.language_code or 'auto'
             except Exception as e2:
                 return jsonify({'error': f'No transcript available for this video: {str(e2)}'}), 400
 
