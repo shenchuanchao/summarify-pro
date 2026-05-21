@@ -11,4 +11,4 @@ supabase
 bcrypt==4.2.1
 stripe==11.6.0
 gunicorn==23.0.0
-youtube-transcript-api==0.6.2
+youtube-transcript-api==1.2.4
