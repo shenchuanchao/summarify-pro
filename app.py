@@ -475,6 +475,21 @@ def extract_url_text(url: str) -> str:
     }
     resp = requests.get(url, headers=headers, timeout=30)
     resp.raise_for_status()
+
+    # ── PDF content ──
+    content_type = resp.headers.get('Content-Type', '')
+    if 'application/pdf' in content_type or url.lower().endswith('.pdf'):
+        import io
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(resp.content))
+        pages = []
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                pages.append(page_text)
+        text = '\n'.join(pages)
+        return text.strip()[:30000]
+
+    # ── HTML content ──
     soup = BeautifulSoup(resp.text, 'html.parser')
     for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe', 'noscript']):
         tag.decompose()
