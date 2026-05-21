@@ -964,9 +964,9 @@ def youtube_transcript(user_id, anon_id):
         error_msg = str(e)
         if 'Video unavailable' in error_msg or 'private' in error_msg.lower():
             return jsonify({'error': 'This video is unavailable (private, deleted, or not found).'}), 400
-        if 'disabled' in error_msg.lower():
-            return jsonify({'error': 'Transcripts are disabled for this video.'}), 400
-        return jsonify({'error': f'Failed to fetch transcript: {error_msg}'}), 500
+        if 'disabled' in error_msg.lower() or 'No transcript available' in error_msg or 'Could not retrieve a transcript' in error_msg:
+            return jsonify({'error': 'No transcript available for this video. The video may not have subtitles or captions enabled.'}), 400
+        return jsonify({'error': 'Failed to fetch transcript. Please try a different video.'}), 500
 
 
 # ── YouTube Summarizer Page ──────────────────────────────────────────────
