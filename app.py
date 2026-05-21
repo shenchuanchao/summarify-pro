@@ -196,20 +196,43 @@ def rate_limit(max_requests: int = 10, window_seconds: int = 60):
 
 def check_daily_usage(user_id: str):
     """
+    Check remaining usage WITHOUT incrementing.
     Returns (allowed: bool, remaining: int or None for unlimited).
-    Uses Supabase to query and update the user's daily usage count.
     """
     sb = get_supabase()
-
     res = sb.table('users').select('*').eq('id', user_id).execute()
     users = res.data or []
     if not users:
         return False, 0
-
     user = users[0]
-
     if user.get('plan') == 'premium':
         return True, None  # None = unlimited
+
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    last_date = (user.get('last_usage_date') or '')
+    daily_count = user.get('daily_usage_count', 0)
+
+    if last_date != today:
+        return True, 10  # fresh day, 10 remaining
+
+    remaining = 10 - daily_count
+    if remaining > 0:
+        return True, remaining
+    return False, 0
+
+
+def record_daily_usage(user_id: str):
+    """
+    Record one usage for a logged-in user (only for free plan).
+    Returns new remaining count (or None for premium).
+    """
+    sb = get_supabase()
+    res = sb.table('users').select('plan,daily_usage_count,last_usage_date').eq('id', user_id).execute()
+    if not res.data:
+        return 0
+    user = res.data[0]
+    if user.get('plan') == 'premium':
+        return None
 
     today = datetime.datetime.now().strftime('%Y-%m-%d')
     last_date = (user.get('last_usage_date') or '')
@@ -219,17 +242,11 @@ def check_daily_usage(user_id: str):
             'daily_usage_count': 1,
             'last_usage_date': today
         }).eq('id', user_id).execute()
-        return True, 9
+        return 9
 
-    if user['daily_usage_count'] < 10:
-        new_count = user['daily_usage_count'] + 1
-        sb.table('users').update(
-            {'daily_usage_count': new_count}
-        ).eq('id', user_id).execute()
-        remaining = 10 - new_count
-        return True, remaining
-
-    return False, 0
+    new_count = user.get('daily_usage_count', 0) + 1
+    sb.table('users').update({'daily_usage_count': new_count}).eq('id', user_id).execute()
+    return 10 - new_count
 
 # ── Anonymous Usage Tracking ──────────────────────────────────────────
 
@@ -237,7 +254,7 @@ ANON_DAILY_LIMIT = 3
 
 def check_anon_usage(anon_id: str, ip: str):
     """
-    Check and increment anonymous daily usage.
+    Check anonymous daily usage WITHOUT incrementing.
     Returns (allowed: bool, remaining: int).
     """
     sb = get_supabase()
@@ -246,11 +263,31 @@ def check_anon_usage(anon_id: str, ip: str):
         res = sb.table('anonymous_usage').select('*').eq('anon_id', anon_id).eq('usage_date', today).execute()
         if res.data:
             record = res.data[0]
-            if record['usage_count'] >= ANON_DAILY_LIMIT:
-                return False, 0
+            remaining = ANON_DAILY_LIMIT - record['usage_count']
+            if remaining > 0:
+                return True, remaining
+            return False, 0
+        else:
+            return True, ANON_DAILY_LIMIT  # no usage yet today
+    except Exception as e:
+        print(f'[anon_usage] Error checking usage for {anon_id}: {e}')
+        return True, ANON_DAILY_LIMIT
+
+
+def record_anon_usage(anon_id: str, ip: str):
+    """
+    Record one anonymous usage after a successful operation.
+    Returns new remaining count.
+    """
+    sb = get_supabase()
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    try:
+        res = sb.table('anonymous_usage').select('*').eq('anon_id', anon_id).eq('usage_date', today).execute()
+        if res.data:
+            record = res.data[0]
             new_count = record['usage_count'] + 1
             sb.table('anonymous_usage').update({'usage_count': new_count}).eq('id', record['id']).execute()
-            return True, ANON_DAILY_LIMIT - new_count
+            return ANON_DAILY_LIMIT - new_count
         else:
             sb.table('anonymous_usage').insert({
                 'anon_id': anon_id,
@@ -258,16 +295,16 @@ def check_anon_usage(anon_id: str, ip: str):
                 'usage_date': today,
                 'usage_count': 1
             }).execute()
-            return True, ANON_DAILY_LIMIT - 1
+            return ANON_DAILY_LIMIT - 1
     except Exception as e:
-        # Log but don't block — fallback: allow usage
-        print(f'[anon_usage] Error checking usage for {anon_id}: {e}')
-        return True, ANON_DAILY_LIMIT
+        print(f'[anon_usage] Error recording usage for {anon_id}: {e}')
+        return ANON_DAILY_LIMIT - 1
 
 
 def check_usage(user_id=None, anon_id=None, ip=None):
     """
     Unified usage check — authenticated or anonymous.
+    Checks remaining WITHOUT incrementing.
     Returns (allowed: bool, remaining: int or None for unlimited).
     """
     if user_id:
@@ -275,6 +312,18 @@ def check_usage(user_id=None, anon_id=None, ip=None):
     if anon_id:
         return check_anon_usage(anon_id, ip or request.remote_addr or 'unknown')
     return False, 0
+
+
+def record_usage(user_id=None, anon_id=None, ip=None):
+    """
+    Record one usage after a successful operation.
+    Returns new remaining count (or None for premium/unlimited).
+    """
+    if user_id:
+        return record_daily_usage(user_id)
+    if anon_id:
+        return record_anon_usage(anon_id, ip or request.remote_addr or 'unknown')
+    return 0
 
 # ── AI Client ──────────────────────────────────────────────────────────
 
@@ -804,6 +853,7 @@ def parse_pdf(user_id, anon_id):
     if not text:
         return jsonify({'error': 'No extractable text found in this PDF'}), 400
 
+    remaining = record_usage(user_id, anon_id, request.remote_addr)
     return jsonify({
         'text': text,
         'word_count': len(text.split()),
@@ -852,6 +902,7 @@ def parse_word(user_id, anon_id):
     if not text:
         return jsonify({'error': 'No extractable text found in this document'}), 400
 
+    remaining = record_usage(user_id, anon_id, request.remote_addr)
     return jsonify({
         'text': text,
         'word_count': len(text.split()),
@@ -888,6 +939,7 @@ def parse_url(user_id, anon_id):
     if not text:
         return jsonify({'error': 'No readable content found at this URL'}), 400
 
+    remaining = record_usage(user_id, anon_id, request.remote_addr)
     return jsonify({
         'text': text,
         'word_count': len(text.split()),
@@ -951,6 +1003,8 @@ def youtube_transcript(user_id, anon_id):
 
         if not text or not text.strip():
             return jsonify({'error': 'Transcript text is empty.'}), 400
+
+        remaining = record_usage(user_id, anon_id, request.remote_addr)
 
         return jsonify({
             'text': text.strip(),
