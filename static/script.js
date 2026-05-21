@@ -423,6 +423,9 @@ async function parseURL() {
         toast('URL content extracted!', 'success');
     } catch (e) {
         toast(e.message, 'error');
+        if (!STATE.token && e.message && e.message.includes('Sign up')) {
+            setTimeout(() => showModal('login'), 2500);
+        }
     } finally {
         showParseLoading(false);
     }
@@ -447,6 +450,9 @@ async function handleParse() {
         toast('Text extracted successfully!', 'success');
     } catch (e) {
         toast(e.message, 'error');
+        if (!STATE.token && e.message && e.message.includes('Sign up')) {
+            setTimeout(() => showModal('login'), 2500);
+        }
     } finally {
         showParseLoading(false);
     }

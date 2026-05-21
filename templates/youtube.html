@@ -354,6 +354,9 @@ async function fetchTranscript() {
         document.getElementById('ai-section').scrollIntoView({ behavior: 'smooth' });
     } catch (e) {
         toast(e.message, 'error');
+        if (!STATE.token && e.message && e.message.includes('Sign up')) {
+            setTimeout(() => showModal('login'), 2500);
+        }
     } finally {
         document.getElementById('fetch-loading').classList.add('hidden');
         document.getElementById('fetch-btn').disabled = false;
