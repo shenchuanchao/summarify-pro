@@ -948,61 +948,68 @@ def parse_url(user_id, anon_id):
 
 # ── YouTube Transcript Endpoint ─────────────────────────────────────────
 
-def _fetch_transcript_direct(video_id: str):
+def _fetch_transcript_innertube(video_id: str):
     """
-    Fallback: fetch YouTube captions via direct HTTP (no library dependency).
-    Parses the ytInitialPlayerResponse JSON from the video page.
+    Fetch YouTube captions via the innertube player API (POST endpoint).
+    Bypasses HTML page scraping which triggers Google's bot detection (429).
     Returns (transcript_text: str, language_code: str).
     """
+    import xml.etree.ElementTree as ET
+
+    # Mobile user-agent is less likely to trigger bot detection
+    ua = 'com.google.android.youtube/19.33.35 (Linux; U; Android 14; en_US)'
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Content-Type': 'application/json',
+        'User-Agent': ua,
+        'Origin': 'https://www.youtube.com',
     }
 
-    # 1. Fetch video page HTML
-    resp = requests.get(f'https://www.youtube.com/watch?v={video_id}', headers=headers, timeout=15)
-    resp.raise_for_status()
+    # Try mobile clients first (less strict), then web
+    clients = [
+        {"client": {"clientName": "ANDROID", "clientVersion": "19.33.35", "hl": "en", "gl": "US"}},
+        {"client": {"clientName": "IOS", "clientVersion": "19.33.35", "hl": "en", "gl": "US"}},
+        {"client": {"clientName": "WEB", "clientVersion": "2.20250501.00.00", "hl": "en", "gl": "US"}},
+    ]
 
-    # 2. Extract ytInitialPlayerResponse JSON with brace-counting
-    marker = 'ytInitialPlayerResponse'
-    start = resp.text.find(marker)
-    if start == -1:
-        raise Exception('Could not extract player data from YouTube page')
+    last_error = None
+    for ctx in clients:
+        try:
+            payload = {"context": ctx, "videoId": video_id}
+            resp = requests.post(
+                'https://www.youtube.com/youtubei/v1/player',
+                headers=headers,
+                json=payload,
+                timeout=15
+            )
+            if resp.status_code != 200:
+                last_error = f'HTTP {resp.status_code} on player API'
+                continue
 
-    json_start = resp.text.index('{', start)
-    depth = 0
-    json_end = json_start
-    for i in range(json_start, len(resp.text)):
-        if resp.text[i] == '{':
-            depth += 1
-        elif resp.text[i] == '}':
-            depth -= 1
-            if depth == 0:
-                json_end = i + 1
+            pr = resp.json()
+            tracks = (
+                pr.get('captions', {})
+                .get('playerCaptionsTracklistRenderer', {})
+                .get('captionTracks', [])
+            )
+            if tracks:
                 break
+            last_error = 'No caption tracks in response'
+        except Exception as e:
+            last_error = str(e)
+            continue
+    else:
+        raise Exception(last_error or 'Could not fetch video data from YouTube')
 
-    pr = json.loads(resp.text[json_start:json_end])
-
-    # 3. Extract caption tracks
-    tracks = (
-        pr.get('captions', {})
-        .get('playerCaptionsTracklistRenderer', {})
-        .get('captionTracks', [])
-    )
-    if not tracks:
-        raise Exception('No captions available for this video')
-
-    # 4. Pick English track, fallback to first available
+    # Pick English track, fallback to first available
     track = next((t for t in tracks if t.get('languageCode') == 'en'), tracks[0])
     base_url = track.get('baseUrl')
     if not base_url:
         raise Exception('Could not get caption download URL')
 
-    # 5. Fetch & parse caption XML
-    cap_resp = requests.get(base_url, headers=headers, timeout=15)
+    # Fetch & parse caption XML
+    cap_resp = requests.get(base_url, headers={'User-Agent': ua}, timeout=15)
     cap_resp.raise_for_status()
 
-    import xml.etree.ElementTree as ET
     root = ET.fromstring(cap_resp.text)
 
     parts = []
@@ -1054,26 +1061,28 @@ def youtube_transcript(user_id, anon_id):
         return jsonify({'error': 'Invalid YouTube URL. Please provide a valid YouTube video link.'}), 400
 
     try:
-        # Try English transcript first, fall back to any available
         segments = None
         language = 'en'
+
+        # Try innertube API first (bypasses bot detection on Railway)
         try:
-            segments = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            transcript_text, language = _fetch_transcript_innertube(video_id)
+            segments = [{'text': transcript_text}]
         except Exception:
             pass
+
+        # Fallback: youtube-transcript-api library
+        if segments is None:
+            try:
+                segments = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+                language = 'en'
+            except Exception:
+                pass
 
         if segments is None:
             try:
                 segments = YouTubeTranscriptApi.get_transcript(video_id)
                 language = 'auto'
-            except Exception:
-                pass
-
-        # Fallback: direct HTTP fetch (no library needed)
-        if segments is None:
-            try:
-                transcript_text, language = _fetch_transcript_direct(video_id)
-                segments = [{'text': transcript_text}]
             except Exception as e2:
                 return jsonify({'error': f'No transcript available for this video: {str(e2)}'}), 400
 
