@@ -945,9 +945,21 @@ def parse_url(user_id, anon_id):
     try:
         text = extract_url_text(url)
     except requests.exceptions.Timeout:
-        return jsonify({'error': 'Request timed out — the website took too long to respond'}), 500
+        return jsonify({'error': 'Request timed out — the website took too long to respond. Try again or use a different URL.'}), 500
     except requests.exceptions.ConnectionError:
-        return jsonify({'error': 'Could not connect to the URL — check if it is valid'}), 500
+        parsed = urlparse(url)
+        hostname = parsed.hostname or ''
+        if any(suffix in hostname for suffix in ['.gov.cn', '.gov.', 'gov.cn']):
+            return jsonify({
+                'error': 'Cannot reach this government website from the server. '
+                         'Government sites often block overseas traffic. '
+                         'Tip: download the PDF first, then use the "Upload PDF / Word" tab to process it.'
+            }), 500
+        return jsonify({'error': 'Could not connect to the URL — it may be temporarily unavailable or blocking our server. Try a different URL.'}), 500
+    except ValueError as e:
+        if 'private' in str(e).lower() or 'internal' in str(e).lower():
+            return jsonify({'error': 'Access to internal/private networks is not allowed.'}), 400
+        return jsonify({'error': f'Invalid URL: {str(e)}'}), 400
     except Exception as e:
         return jsonify({'error': f'Failed to fetch URL content: {str(e)}'}), 500
 
