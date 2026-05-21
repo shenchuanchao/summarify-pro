@@ -1087,16 +1087,16 @@ def youtube_transcript(user_id, anon_id):
                 fetched = ytt_api.fetch(video_id)
                 segments = fetched.to_raw_data()
                 language = fetched.language_code or 'auto'
-            except Exception as e2:
-                return jsonify({'error': f'No transcript available for this video: {str(e2)}'}), 400
+            except Exception:
+                pass
 
         if not segments:
-            return jsonify({'error': 'Transcript is empty for this video.'}), 400
+            return jsonify({'error': 'Unable to fetch transcript for this video. Please try another video.'}), 400
 
         text = ' '.join(s.get('text', '') for s in segments if s.get('text'))
 
         if not text or not text.strip():
-            return jsonify({'error': 'Transcript text is empty.'}), 400
+            return jsonify({'error': 'Unable to fetch transcript for this video. Please try another video.'}), 400
 
         remaining = record_usage(user_id, anon_id, request.remote_addr)
 
@@ -1108,13 +1108,8 @@ def youtube_transcript(user_id, anon_id):
             'language': language
         })
 
-    except Exception as e:
-        error_msg = str(e)
-        if 'Video unavailable' in error_msg or 'private' in error_msg.lower():
-            return jsonify({'error': 'This video is unavailable (private, deleted, or not found).'}), 400
-        if 'disabled' in error_msg.lower() or 'No transcript available' in error_msg or 'Could not retrieve a transcript' in error_msg:
-            return jsonify({'error': 'No transcript available for this video. The video may not have subtitles or captions enabled.'}), 400
-        return jsonify({'error': 'Failed to fetch transcript. Please try a different video.'}), 500
+    except Exception:
+        return jsonify({'error': 'Unable to fetch transcript for this video. Please try another video.'}), 400
 
 
 # ── YouTube Summarizer Page ──────────────────────────────────────────────
