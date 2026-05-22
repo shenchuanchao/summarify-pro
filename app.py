@@ -2,7 +2,7 @@
 Summarify Pro — Backend API Server
 AI Document Summarizer — International Edition
 Powered by Zhipu AI GLM-4-Flash
-Stripe-powered Premium subscription
+PayPal-powered Premium subscription (monthly)
 """
 
 import os
@@ -34,8 +34,7 @@ import bcrypt
 # Supabase
 from supabase import create_client, Client
 
-# Stripe
-import stripe
+
 
 # YouTube Transcript
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -93,14 +92,45 @@ def get_supabase() -> Client:
         _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
     return _supabase_client
 
-# ── Stripe Client ─────────────────────────────────────────────────────
+# ── PayPal Client ──────────────────────────────────────────────────────
 
-STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
-STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
-STRIPE_PRICE_ID = os.getenv('STRIPE_PRICE_ID', '')
+PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID', '')
+PAYPAL_CLIENT_SECRET = os.getenv('PAYPAL_CLIENT_SECRET', '')
+PAYPAL_MODE = os.getenv('PAYPAL_MODE', 'sandbox')  # 'sandbox' or 'live'
 
-if STRIPE_SECRET_KEY:
-    stripe.api_key = STRIPE_SECRET_KEY
+PAYPAL_BASE = (
+    'https://api-m.sandbox.paypal.com' if PAYPAL_MODE == 'sandbox'
+    else 'https://api-m.paypal.com'
+)
+
+_paypal_token_cache = {'token': None, 'expires_at': 0}
+
+
+def get_paypal_token() -> str:
+    """OAuth 2.0 → access_token, cached until near expiry."""
+    now = time.time()
+    if _paypal_token_cache['token'] and now < _paypal_token_cache['expires_at'] - 60:
+        return _paypal_token_cache['token']
+    resp = requests.post(
+        f'{PAYPAL_BASE}/v1/oauth2/token',
+        auth=(PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET),
+        data={'grant_type': 'client_credentials'},
+        headers={'Accept': 'application/json'}
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    _paypal_token_cache['token'] = data['access_token']
+    _paypal_token_cache['expires_at'] = now + data.get('expires_in', 32400)
+    return data['access_token']
+
+
+def paypal_headers():
+    """Return auth + content-type headers for PayPal API."""
+    return {
+        'Authorization': f'Bearer {get_paypal_token()}',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
 
 # ── Auth Utilities ─────────────────────────────────────────────────────
 
@@ -501,7 +531,7 @@ def extract_url_text(url: str) -> str:
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', paypal_client_id=PAYPAL_CLIENT_ID, paypal_mode=PAYPAL_MODE)
 
 @app.route('/login')
 def login_page():
@@ -694,139 +724,166 @@ def submit_feedback():
     return jsonify({'success': True, 'message': 'Thank you for your feedback!'})
 
 
-# ── Stripe Endpoints ───────────────────────────────────────────────────
+# ── PayPal Endpoints ───────────────────────────────────────────────────
 
-@app.route('/api/stripe/create-checkout-session', methods=['POST'])
+@app.route('/api/paypal/create-subscription', methods=['POST'])
 @require_auth
-def create_checkout_session(user_id):
-    """Create a Stripe Checkout session for the user to subscribe."""
-    if not STRIPE_SECRET_KEY:
-        return jsonify({'error': 'Stripe not configured on server'}), 500
-    if not STRIPE_PRICE_ID:
-        return jsonify({'error': 'Stripe price ID not configured'}), 500
+def create_paypal_subscription(user_id):
+    """Create a PayPal subscription for the user."""
+    if not PAYPAL_CLIENT_ID or not PAYPAL_CLIENT_SECRET:
+        return jsonify({'error': 'PayPal not configured on server'}), 500
+
+    plan_id = os.getenv('PAYPAL_PLAN_ID', '')
+    if not plan_id:
+        return jsonify({'error': 'PayPal Plan ID not configured'}), 500
 
     sb = get_supabase()
-    res = sb.table('users').select('*').eq('id', user_id).execute()
+    res = sb.table('users').select('email').eq('id', user_id).execute()
+    if not res.data:
+        return jsonify({'error': 'User not found'}), 404
+    email = res.data[0]['email']
+
+    origin = request.headers.get('Origin', 'http://localhost:5000')
+
+    try:
+        resp = requests.post(
+            f'{PAYPAL_BASE}/v1/billing/subscriptions',
+            headers=paypal_headers(),
+            json={
+                'plan_id': plan_id,
+                'custom_id': user_id,
+                'subscriber': {
+                    'name': {'given_name': 'User'},
+                    'email_address': email
+                },
+                'application_context': {
+                    'brand_name': 'Summarify Pro',
+                    'user_action': 'SUBSCRIBE_NOW',
+                    'shipping_preference': 'NO_SHIPPING',
+                    'return_url': f'{origin}/?checkout=success',
+                    'cancel_url': f'{origin}/?checkout=cancelled'
+                }
+            }
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        # Extract approval URL from HATEOAS links
+        approve_link = next(
+            (l['href'] for l in data.get('links', []) if l['rel'] == 'approve'),
+            None
+        )
+        if not approve_link:
+            return jsonify({'error': 'No approval URL from PayPal'}), 500
+
+        return jsonify({
+            'subscription_id': data['id'],
+            'approve_url': approve_link
+        })
+    except requests.exceptions.HTTPError as e:
+        err_detail = ''
+        try:
+            err_detail = e.response.json().get('message', str(e))
+        except Exception:
+            err_detail = str(e)
+        return jsonify({'error': f'PayPal error: {err_detail}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Failed to create subscription: {str(e)}'}), 500
+
+
+@app.route('/api/paypal/activate-subscription', methods=['POST'])
+@require_auth
+def activate_paypal_subscription(user_id):
+    """Activate a PayPal subscription after user approval.
+    Called by the frontend after the PayPal popup closes (onApprove).
+    """
+    data = request.get_json(silent=True) or {}
+    subscription_id = data.get('subscription_id', '').strip()
+    if not subscription_id:
+        return jsonify({'error': 'subscription_id is required'}), 400
+
+    try:
+        # Verify subscription status via PayPal API
+        resp = requests.get(
+            f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}',
+            headers=paypal_headers()
+        )
+        resp.raise_for_status()
+        sub = resp.json()
+
+        status = sub.get('status', '')
+        if status not in ('ACTIVE', 'APPROVAL_PENDING'):
+            return jsonify({'error': f'Subscription not active (status: {status})'}), 400
+
+        # If APPROVAL_PENDING, activate it
+        if status == 'APPROVAL_PENDING':
+            resp2 = requests.post(
+                f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}/activate',
+                headers=paypal_headers(),
+                json={}
+            )
+            resp2.raise_for_status()
+
+        # Save subscription_id & upgrade plan
+        sb = get_supabase()
+        sb.table('users').update({
+            'plan': 'premium',
+            'paypal_subscription_id': subscription_id
+        }).eq('id', user_id).execute()
+
+        return jsonify({
+            'success': True,
+            'plan': 'premium',
+            'subscription_id': subscription_id
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to activate subscription: {str(e)}'}), 500
+
+
+@app.route('/api/paypal/cancel-subscription', methods=['POST'])
+@require_auth
+def cancel_paypal_subscription(user_id):
+    """Cancel the user's PayPal subscription and downgrade to free."""
+    sb = get_supabase()
+    res = sb.table('users').select('paypal_subscription_id').eq('id', user_id).execute()
     if not res.data:
         return jsonify({'error': 'User not found'}), 404
 
-    user = res.data[0]
-    email = user['email']
-
-    # Get or create Stripe customer
-    customer_id = None
-    try:
-        customer = stripe.Customer.create(email=email)
-        customer_id = customer.id
-    except Exception as e:
-        return jsonify({'error': f'Failed to create Stripe customer: {str(e)}'}), 500
-
-    # Determine success/cancel URLs
-    origin = request.headers.get('Origin', 'http://localhost:5000')
-    success_url = f'{origin}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}'
-    cancel_url = f'{origin}/?checkout=cancelled'
+    sub_id = res.data[0].get('paypal_subscription_id')
+    if not sub_id:
+        return jsonify({'error': 'No active subscription found'}), 400
 
     try:
-        session = stripe.checkout.Session.create(
-            customer=customer_id,
-            payment_method_types=['card'],
-            line_items=[{
-                'price': STRIPE_PRICE_ID,
-                'quantity': 1
-            }],
-            mode='payment',  # One-time payment for lifetime access
-            success_url=success_url,
-            cancel_url=cancel_url,
-            metadata={
-                'user_id': user_id
-            }
+        # Cancel on PayPal side
+        resp = requests.post(
+            f'{PAYPAL_BASE}/v1/billing/subscriptions/{sub_id}/cancel',
+            headers=paypal_headers(),
+            json={'reason': 'User cancelled'}
         )
+        resp.raise_for_status()
+
+        # Downgrade plan
+        sb.table('users').update({
+            'plan': 'free',
+            'paypal_subscription_id': None
+        }).eq('id', user_id).execute()
+
         return jsonify({
-            'checkout_url': session.url,
-            'session_id': session.id
+            'success': True,
+            'plan': 'free',
+            'message': 'Subscription cancelled. You can subscribe again anytime.'
         })
     except Exception as e:
-        return jsonify({'error': f'Failed to create checkout session: {str(e)}'}), 500
+        return jsonify({'error': f'Failed to cancel subscription: {str(e)}'}), 500
 
 
-@app.route('/api/stripe/verify-session', methods=['GET'])
-@require_auth
-def verify_session(user_id):
-    """Verify a Stripe Checkout session and activate premium."""
-    session_id = request.args.get('session_id', '').strip()
-    if not session_id:
-        return jsonify({'error': 'session_id is required'}), 400
-
-    if not STRIPE_SECRET_KEY:
-        return jsonify({'error': 'Stripe not configured'}), 500
-
-    try:
-        session = stripe.checkout.Session.retrieve(session_id)
-    except Exception as e:
-        return jsonify({'error': f'Failed to verify session: {str(e)}'}), 500
-
-    if session.payment_status != 'paid':
-        return jsonify({'error': 'Payment not completed', 'status': session.payment_status}), 400
-
-    # Verify this session belongs to this user
-    if session.metadata.get('user_id') != user_id:
-        return jsonify({'error': 'Session mismatch'}), 403
-
-    # Activate premium
-    sb = get_supabase()
-    sb.table('users').update({
-        'plan': 'premium'
-    }).eq('id', user_id).execute()
-
+@app.route('/api/paypal/get-status', methods=['GET'])
+def get_paypal_status():
+    """Get PayPal configuration status for the frontend."""
     return jsonify({
-        'success': True,
-        'plan': 'premium'
-    })
-
-
-@app.route('/api/stripe/webhook', methods=['POST'])
-def stripe_webhook():
-    """Handle Stripe webhook events."""
-    if not STRIPE_WEBHOOK_SECRET:
-        return jsonify({'error': 'Webhook not configured'}), 500
-
-    payload = request.get_data(as_text=True)
-    sig_header = request.headers.get('Stripe-Signature', '')
-    event = None
-
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, STRIPE_WEBHOOK_SECRET
-        )
-    except ValueError:
-        return jsonify({'error': 'Invalid payload'}), 400
-    except stripe.error.SignatureVerificationError:
-        return jsonify({'error': 'Invalid signature'}), 400
-
-    event_type = event['type']
-
-    if event_type == 'checkout.session.completed':
-        session = event['data']['object']
-        user_id = session.metadata.get('user_id')
-        if user_id and session.payment_status == 'paid':
-            sb = get_supabase()
-            sb.table('users').update({
-                'plan': 'premium'
-            }).eq('id', user_id).execute()
-
-    elif event_type == 'payment_intent.payment_failed':
-        # Handle failed payment
-        pass
-
-    return jsonify({'received': True})
-
-
-@app.route('/api/stripe/get-status', methods=['GET'])
-def get_stripe_status():
-    """Get Stripe configuration status for the frontend."""
-    return jsonify({
-        'configured': bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID),
-        'has_webhook': bool(STRIPE_WEBHOOK_SECRET)
+        'configured': bool(PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET),
+        'mode': PAYPAL_MODE,
+        'has_plan_id': bool(os.getenv('PAYPAL_PLAN_ID', ''))
     })
 
 
@@ -1241,7 +1298,7 @@ if __name__ == '__main__':
     print(f"  AI Provider : {AI_PROVIDER} ({OPENAI_MODEL})")
     print(f"  AI Base URL : {OPENAI_BASE_URL}")
     print(f"  Supabase URL : {SUPABASE_URL}")
-    print(f"  Stripe : {'configured' if STRIPE_SECRET_KEY else 'NOT configured'}")
+    print(f"  PayPal  : {'configured' if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else 'NOT configured'} ({PAYPAL_MODE})")
     print("  Server running at http://localhost:5000")
     print("=" * 60)
     app.run(debug=False, host='0.0.0.0', port=int(os.getenv('PORT', 8080)))
