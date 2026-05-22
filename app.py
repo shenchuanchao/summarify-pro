@@ -531,7 +531,10 @@ def extract_url_text(url: str) -> str:
 
 @app.route('/')
 def index():
-    return render_template('index.html', paypal_client_id=PAYPAL_CLIENT_ID, paypal_mode=PAYPAL_MODE)
+    return render_template('index.html',
+                           paypal_client_id=PAYPAL_CLIENT_ID,
+                           paypal_mode=PAYPAL_MODE,
+                           paypal_plan_id=os.getenv('PAYPAL_PLAN_ID', ''))
 
 @app.route('/login')
 def login_page():

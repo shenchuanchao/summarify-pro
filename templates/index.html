@@ -289,8 +289,13 @@
 }
 </script>
 {% if paypal_client_id %}
+<script>
+  window.PAYPAL_CLIENT_ID = '{{ paypal_client_id }}';
+  window.PAYPAL_PLAN_ID = '{{ paypal_plan_id }}';
+  window.PAYPAL_MODE = '{{ paypal_mode }}';
+</script>
 <!-- PayPal SDK (subscription intent) -->
-<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&vault=true&intent=subscription&currency=USD" data-sdk-integration-source="button-factory"></script>
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&vault=true&intent=subscription&currency=USD"></script>
 {% endif %}
 </body>
 </html>

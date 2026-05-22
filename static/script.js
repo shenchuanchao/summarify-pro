@@ -183,30 +183,21 @@ const PayPal = {
         if (loginHint) loginHint.classList.add('hidden');
         if (premiumBadge) premiumBadge.classList.add('hidden');
 
-        // Render PayPal button (if not already rendered)
-        if (window.paypal && window.paypal.Button) {
-            window.paypal.Button.driver('PT', { 
-                client: {
-                    sandbox: window.PAYPAL_CLIENT_ID,
-                    production: window.PAYPAL_CLIENT_ID
-                },
+        // Render PayPal button using v2 JS SDK (if not already rendered)
+        if (window.paypal && typeof paypal.Buttons === 'function') {
+            paypal.Buttons({
                 style: {
                     layout: 'vertical',
-                    size: 'responsive',
                     color: 'gold',
                     shape: 'rect',
                     label: 'subscribe'
                 },
-                createSubscription: async () => {
-                    try {
-                        const { subscription_id, approve_url } = await PayPal.createSubscription();
-                        return subscription_id;
-                    } catch (e) {
-                        toast(e.message, 'error');
-                        throw e;
-                    }
+                createSubscription: function(data, actions) {
+                    return actions.subscription.create({
+                        plan_id: window.PAYPAL_PLAN_ID
+                    });
                 },
-                onApprove: async (data) => {
+                onApprove: async function(data) {
                     try {
                         toast('Activating your subscription...', 'info');
                         const result = await PayPal.activateSubscription(data.subscriptionID);
@@ -221,11 +212,11 @@ const PayPal = {
                         toast(e.message || 'Activation failed', 'error');
                     }
                 },
-                onError: (err) => {
+                onError: function(err) {
                     console.error('PayPal error:', err);
                     toast('Payment failed. Please try again.', 'error');
                 },
-                onCancel: () => {
+                onCancel: function() {
                     toast('Payment cancelled. You can upgrade anytime!', 'info');
                 }
             }).render(container);
