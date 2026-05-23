@@ -975,7 +975,7 @@ def activate_paypal_subscription(user_id):
 @app.route('/api/paypal/cancel-subscription', methods=['POST'])
 @require_auth
 def cancel_paypal_subscription(user_id):
-    """Cancel the user's PayPal subscription and downgrade to free."""
+    """Cancel auto-renewal — user keeps premium until current period ends."""
     sb = get_supabase()
     try:
         res = sb.table('subscriptions').select('*') \
@@ -987,31 +987,23 @@ def cancel_paypal_subscription(user_id):
             return jsonify({'error': 'No active PayPal subscription found'}), 400
 
         sub = res.data[0]
-        sub_id = sub.get('provider_subscription_id')
 
-        # Cancel on PayPal side
-        if sub_id:
-            resp = requests.post(
-                f'{PAYPAL_BASE}/v1/billing/subscriptions/{sub_id}/cancel',
-                headers=paypal_headers(),
-                json={'reason': 'Cancelled by user'}
-            )
-            resp.raise_for_status()
-
-        # Update subscriptions table
+        # Mark cancel-at-period-end — do NOT call PayPal cancel API
+        # (PayPal will attempt renewal; if it fails or plan doesn't auto-renew,
+        #  the webhook EXPIRED event will handle actual downgrade)
         sb.table('subscriptions').update({
-            'status': 'cancelled',
-            'cancelled_at': datetime.datetime.utcnow().isoformat(),
-            'cancel_at_period_end': False
+            'cancel_at_period_end': True,
+            'cancelled_at': datetime.datetime.utcnow().isoformat()
         }).eq('id', sub['id']).execute()
 
-        # Sync users.plan
-        plan = sync_user_plan(user_id)
+        # Refresh subscription info for response
+        info = get_subscription_info(user_id)
 
         return jsonify({
             'success': True,
-            'plan': plan,
-            'message': 'Subscription cancelled. You can subscribe again anytime.'
+            'plan': info['plan'],
+            'subscription': info['subscription'],
+            'message': 'Auto-renewal cancelled. Your premium access continues until the current period ends.'
         })
     except requests.exceptions.HTTPError as e:
         err_detail = ''

@@ -265,7 +265,7 @@
                     ✅ You're Premium
                 </div>
                 <div id="subscription-info" class="text-xs text-brand-200 text-center"></div>
-                <button id="btn-cancel-subscription" onclick="PayPal.cancelSubscription().then(r => { if(r.success) { STATE.user.plan='free'; localStorage.setItem('summarify_user', JSON.stringify(STATE.user)); updateUI(); loadUsage(); toast('Subscription cancelled','info'); } }).catch(e => toast(e.message,'error'))" class="hidden w-full py-2 text-xs text-brand-200 hover:text-white underline transition-colors">
+                <button id="btn-cancel-subscription" onclick="if(!confirm('Cancel auto-renewal? You will keep premium access until the current billing period ends.')) return; PayPal.cancelSubscription().then(r => { if(r.success) { fetch('/api/user/subscription',{headers:{'Authorization':'Bearer '+STATE.token}}).then(res=>res.json()).then(data=>{ STATE.user.plan=data.plan; STATE.user.subscription=data.subscription; localStorage.setItem('summarify_user',JSON.stringify(STATE.user)); updateUI(); loadUsage(); toast(r.message||'Auto-renewal cancelled','info'); }); } }).catch(e => toast(e.message,'error'))" class="hidden w-full py-2 text-xs text-brand-200 hover:text-white underline transition-colors">
                     Cancel subscription
                 </button>
             </div>

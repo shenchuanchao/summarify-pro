@@ -177,11 +177,14 @@ const PayPal = {
                         const endDate = data.subscription.current_period_end
                             ? new Date(data.subscription.current_period_end).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })
                             : '';
+                        const isCancelAtEnd = data.subscription.cancel_at_period_end;
                         if (subInfo && endDate) {
-                            subInfo.textContent = `Next billing: ${endDate}`;
+                            subInfo.textContent = isCancelAtEnd
+                                ? `Premium until ${endDate} (auto-renewal off)`
+                                : `Next billing: ${endDate}`;
                             subInfo.classList.remove('hidden');
                         }
-                        if (cancelBtn && data.subscription.provider === 'paypal') {
+                        if (cancelBtn && data.subscription.provider === 'paypal' && !isCancelAtEnd) {
                             cancelBtn.classList.remove('hidden');
                         }
                     }
