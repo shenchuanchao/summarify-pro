@@ -99,8 +99,10 @@ PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID', '')
 PAYPAL_CLIENT_SECRET = os.getenv('PAYPAL_CLIENT_SECRET', '')
 PAYPAL_MODE = os.getenv('PAYPAL_MODE', 'sandbox')  # 'sandbox' or 'live'
 
+PAYPAL_API_BASE = os.getenv('PAYPAL_API_BASE', '')
 PAYPAL_BASE = (
-    'https://api-m.sandbox.paypal.com' if PAYPAL_MODE == 'sandbox'
+    PAYPAL_API_BASE if PAYPAL_API_BASE
+    else 'https://api-m.sandbox.paypal.com' if PAYPAL_MODE == 'sandbox'
     else 'https://api-m.paypal.com'
 )
 
