@@ -107,6 +107,7 @@ const API = (() => {
         },
         submitFeedback: (content) =>
             fetch(`${BASE}/api/user/feedback`, { method: 'POST', headers: headers(), body: JSON.stringify({ content }) }).then(handle),
+        getSubscription: () => fetch(`${BASE}/api/user/subscription`, { headers: { 'Authorization': `Bearer ${STATE.token}` } }).then(handle),
     };
 })();
 
@@ -156,6 +157,8 @@ const PayPal = {
         const container = document.getElementById('paypal-button-container');
         const loginHint = document.getElementById('paypal-login-hint');
         const premiumBadge = document.getElementById('premium-active-badge');
+        const subInfo = document.getElementById('subscription-info');
+        const cancelBtn = document.getElementById('btn-cancel-subscription');
 
         // Determine whether to show the subscribe button
         const shouldShowSubscribe = STATE.token && STATE.user && STATE.user.plan !== 'premium';
@@ -167,6 +170,23 @@ const PayPal = {
             if (container) container.classList.add('hidden');
             if (loginHint) loginHint.classList.add('hidden');
             if (premiumBadge) premiumBadge.classList.remove('hidden');
+            // Fetch subscription details
+            if (subInfo && STATE.token) {
+                API.getSubscription().then(data => {
+                    if (data.subscription && data.subscription.status === 'active') {
+                        const endDate = data.subscription.current_period_end
+                            ? new Date(data.subscription.current_period_end).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })
+                            : '';
+                        if (subInfo && endDate) {
+                            subInfo.textContent = `Next billing: ${endDate}`;
+                            subInfo.classList.remove('hidden');
+                        }
+                        if (cancelBtn && data.subscription.provider === 'paypal') {
+                            cancelBtn.classList.remove('hidden');
+                        }
+                    }
+                }).catch(() => {});
+            }
             return;
         }
 
@@ -193,9 +213,9 @@ const PayPal = {
                     label: 'subscribe'
                 },
                 createSubscription: function(data, actions) {
-                    return actions.subscription.create({
-                        plan_id: window.PAYPAL_PLAN_ID
-                    });
+                    // Server-side creation to set custom_id = user_id
+                    return PayPal.createSubscription()
+                        .then(resp => resp.subscription_id);
                 },
                 onApprove: async function(data) {
                     try {

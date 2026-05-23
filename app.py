@@ -132,6 +132,56 @@ def paypal_headers():
         'Accept': 'application/json'
     }
 
+# ── Subscription Helpers ───────────────────────────────────────────────
+
+def get_active_subscription(user_id: str) -> dict | None:
+    """Get the user's active subscription (any provider).
+    Returns None if no subscription or if subscriptions table doesn't exist yet."""
+    sb = get_supabase()
+    try:
+        res = sb.table('subscriptions').select('*') \
+            .eq('user_id', user_id) \
+            .eq('status', 'active') \
+            .order('created_at', desc=True) \
+            .limit(1) \
+            .execute()
+        return res.data[0] if res.data else None
+    except Exception:
+        return None  # Table not created yet
+
+
+def sync_user_plan(user_id: str) -> str:
+    """Sync users.plan based on whether any active subscription exists."""
+    sb = get_supabase()
+    try:
+        active = sb.table('subscriptions').select('id') \
+            .eq('user_id', user_id) \
+            .eq('status', 'active') \
+            .execute()
+        plan = 'premium' if active.data else 'free'
+        sb.table('users').update({'plan': plan}).eq('id', user_id).execute()
+        return plan
+    except Exception:
+        # Fallback: read current plan from users table
+        res = sb.table('users').select('plan').eq('id', user_id).execute()
+        return res.data[0].get('plan', 'free') if res.data else 'free'
+
+
+def get_subscription_info(user_id: str) -> dict:
+    """Return subscription summary for user info responses."""
+    sub = get_active_subscription(user_id)
+    if not sub:
+        return {'plan': 'free', 'subscription': None}
+    return {
+        'plan': sub.get('plan_tier', 'premium'),
+        'subscription': {
+            'provider': sub.get('provider'),
+            'status': sub.get('status'),
+            'current_period_end': sub.get('current_period_end'),
+            'cancel_at_period_end': sub.get('cancel_at_period_end', False)
+        }
+    }
+
 # ── Auth Utilities ─────────────────────────────────────────────────────
 
 def hash_password(password: str) -> str:
@@ -597,12 +647,14 @@ def register():
     new_user = insert_res.data[0]
     token = generate_token(new_user['id'])
 
+    sub_info = get_subscription_info(new_user['id'])
     return jsonify({
         'token': token,
         'user': {
             'id': new_user['id'],
             'email': new_user['email'],
-            'plan': new_user.get('plan', 'free')
+            'plan': sub_info['plan'],
+            'subscription': sub_info['subscription']
         }
     })
 
@@ -636,13 +688,15 @@ def login():
         sb.table('users').update({'password_hash': new_hash}).eq('id', user['id']).execute()
 
     token = generate_token(user['id'])
+    sub_info = get_subscription_info(user['id'])
 
     return jsonify({
         'token': token,
         'user': {
             'id': user['id'],
             'email': user['email'],
-            'plan': user.get('plan', 'free')
+            'plan': sub_info['plan'],
+            'subscription': sub_info['subscription']
         }
     })
 
@@ -662,12 +716,20 @@ def get_usage(user_id, anon_id):
         user = res.data[0]
         today = datetime.datetime.now().strftime('%Y-%m-%d')
 
-        if user['plan'] == 'premium':
+        # Check subscriptions table for premium (not just users.plan)
+        active_sub = get_active_subscription(user_id)
+        if active_sub:
             return jsonify({
                 'plan': 'premium',
                 'daily_limit': None,
                 'used_today': 0,
-                'remaining': None
+                'remaining': None,
+                'subscription': {
+                    'provider': active_sub['provider'],
+                    'status': active_sub['status'],
+                    'current_period_end': active_sub.get('current_period_end'),
+                    'cancel_at_period_end': active_sub.get('cancel_at_period_end', False)
+                }
             })
 
         if user.get('last_usage_date') != today:
@@ -799,6 +861,11 @@ def create_paypal_subscription(user_id):
 def activate_paypal_subscription(user_id):
     """Activate a PayPal subscription after user approval.
     Called by the frontend after the PayPal popup closes (onApprove).
+
+    1. Fetch subscription from PayPal API
+    2. Validate custom_id matches authenticated user
+    3. Upsert into subscriptions table
+    4. Sync users.plan
     """
     data = request.get_json(silent=True) or {}
     subscription_id = data.get('subscription_id', '').strip()
@@ -806,7 +873,7 @@ def activate_paypal_subscription(user_id):
         return jsonify({'error': 'subscription_id is required'}), 400
 
     try:
-        # Verify subscription status via PayPal API
+        # 1. Fetch subscription details from PayPal
         resp = requests.get(
             f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}',
             headers=paypal_headers()
@@ -818,7 +885,12 @@ def activate_paypal_subscription(user_id):
         if status not in ('ACTIVE', 'APPROVAL_PENDING'):
             return jsonify({'error': f'Subscription not active (status: {status})'}), 400
 
-        # If APPROVAL_PENDING, activate it
+        # 2. Validate custom_id belongs to this user
+        custom_id = sub.get('custom_id', '')
+        if custom_id and custom_id != user_id:
+            return jsonify({'error': 'Subscription does not belong to this user'}), 403
+
+        # 3. If APPROVAL_PENDING, activate it on PayPal side
         if status == 'APPROVAL_PENDING':
             resp2 = requests.post(
                 f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}/activate',
@@ -826,19 +898,73 @@ def activate_paypal_subscription(user_id):
                 json={}
             )
             resp2.raise_for_status()
+            # Refetch to get updated status & billing info
+            resp = requests.get(
+                f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}',
+                headers=paypal_headers()
+            )
+            resp.raise_for_status()
+            sub = resp.json()
 
-        # Save subscription_id & upgrade plan
+        # 4. Extract billing cycle info
+        billing_info = sub.get('billing_info', {})
+        next_billing = billing_info.get('next_billing_time', None)
+        last_payment = billing_info.get('last_payment', {})
+        period_end = next_billing or (
+            last_payment.get('time', None) if last_payment else None
+        )
+
+        # 5. Upsert into subscriptions table (generic)
         sb = get_supabase()
-        sb.table('users').update({
-            'plan': 'premium',
-            'paypal_subscription_id': subscription_id
-        }).eq('id', user_id).execute()
+        existing = sb.table('subscriptions').select('id') \
+            .eq('user_id', user_id) \
+            .eq('provider', 'paypal') \
+            .eq('provider_subscription_id', subscription_id) \
+            .execute()
+
+        sub_record = {
+            'user_id': user_id,
+            'provider': 'paypal',
+            'provider_subscription_id': subscription_id,
+            'status': 'active',
+            'plan_tier': 'premium',
+            'current_period_end': period_end,
+            'cancel_at_period_end': False,
+            'provider_metadata': {
+                'paypal_plan_id': sub.get('plan_id', ''),
+                'subscriber_email': (sub.get('subscriber', {}) or {}).get('email_address', ''),
+                'last_updated': datetime.datetime.utcnow().isoformat()
+            }
+        }
+
+        if existing.data:
+            sb.table('subscriptions').update(sub_record) \
+                .eq('id', existing.data[0]['id']).execute()
+        else:
+            # Cancel any previous active PayPal subscription for this user
+            sb.table('subscriptions').update({'status': 'cancelled', 'cancelled_at': 'now()'}) \
+                .eq('user_id', user_id) \
+                .eq('provider', 'paypal') \
+                .eq('status', 'active') \
+                .execute()
+            sb.table('subscriptions').insert(sub_record).execute()
+
+        # 6. Sync users.plan
+        sync_user_plan(user_id)
 
         return jsonify({
             'success': True,
             'plan': 'premium',
-            'subscription_id': subscription_id
+            'subscription_id': subscription_id,
+            'current_period_end': period_end
         })
+    except requests.exceptions.HTTPError as e:
+        err_detail = ''
+        try:
+            err_detail = e.response.json().get('message', str(e))
+        except Exception:
+            err_detail = str(e)
+        return jsonify({'error': f'PayPal error: {err_detail}'}), 500
     except Exception as e:
         return jsonify({'error': f'Failed to activate subscription: {str(e)}'}), 500
 
@@ -848,34 +974,49 @@ def activate_paypal_subscription(user_id):
 def cancel_paypal_subscription(user_id):
     """Cancel the user's PayPal subscription and downgrade to free."""
     sb = get_supabase()
-    res = sb.table('users').select('paypal_subscription_id').eq('id', user_id).execute()
-    if not res.data:
-        return jsonify({'error': 'User not found'}), 404
-
-    sub_id = res.data[0].get('paypal_subscription_id')
-    if not sub_id:
-        return jsonify({'error': 'No active subscription found'}), 400
-
     try:
-        # Cancel on PayPal side
-        resp = requests.post(
-            f'{PAYPAL_BASE}/v1/billing/subscriptions/{sub_id}/cancel',
-            headers=paypal_headers(),
-            json={'reason': 'User cancelled'}
-        )
-        resp.raise_for_status()
+        res = sb.table('subscriptions').select('*') \
+            .eq('user_id', user_id) \
+            .eq('provider', 'paypal') \
+            .eq('status', 'active') \
+            .execute()
+        if not res.data:
+            return jsonify({'error': 'No active PayPal subscription found'}), 400
 
-        # Downgrade plan
-        sb.table('users').update({
-            'plan': 'free',
-            'paypal_subscription_id': None
-        }).eq('id', user_id).execute()
+        sub = res.data[0]
+        sub_id = sub.get('provider_subscription_id')
+
+        # Cancel on PayPal side
+        if sub_id:
+            resp = requests.post(
+                f'{PAYPAL_BASE}/v1/billing/subscriptions/{sub_id}/cancel',
+                headers=paypal_headers(),
+                json={'reason': 'Cancelled by user'}
+            )
+            resp.raise_for_status()
+
+        # Update subscriptions table
+        sb.table('subscriptions').update({
+            'status': 'cancelled',
+            'cancelled_at': datetime.datetime.utcnow().isoformat(),
+            'cancel_at_period_end': False
+        }).eq('id', sub['id']).execute()
+
+        # Sync users.plan
+        plan = sync_user_plan(user_id)
 
         return jsonify({
             'success': True,
-            'plan': 'free',
+            'plan': plan,
             'message': 'Subscription cancelled. You can subscribe again anytime.'
         })
+    except requests.exceptions.HTTPError as e:
+        err_detail = ''
+        try:
+            err_detail = e.response.json().get('message', str(e))
+        except Exception:
+            err_detail = str(e)
+        return jsonify({'error': f'PayPal error: {err_detail}'}), 500
     except Exception as e:
         return jsonify({'error': f'Failed to cancel subscription: {str(e)}'}), 500
 
@@ -887,6 +1028,125 @@ def get_paypal_status():
         'configured': bool(PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET),
         'mode': PAYPAL_MODE,
         'has_plan_id': bool(os.getenv('PAYPAL_PLAN_ID', ''))
+    })
+
+
+@app.route('/api/paypal/webhook', methods=['POST'])
+def paypal_webhook():
+    """Handle PayPal subscription lifecycle events.
+
+    ⚠️ REQUIRES PayPal BUSINESS account. Personal accounts cannot use webhooks.
+    Webhook URL must be registered at: PayPal Developer Dashboard → Webhooks
+
+    Events handled:
+    - BILLING.SUBSCRIPTION.ACTIVATED   → subscription started
+    - BILLING.SUBSCRIPTION.CANCELLED   → subscription cancelled
+    - BILLING.SUBSCRIPTION.EXPIRED     → subscription expired
+    - BILLING.SUBSCRIPTION.SUSPENDED   → payment failed, subscription suspended
+    - BILLING.SUBSCRIPTION.PAYMENT.FAILED → single payment failure
+    """
+    payload = request.get_json(silent=True)
+    if not payload:
+        return jsonify({'error': 'Invalid payload'}), 400
+
+    event_type = payload.get('event_type', '')
+    resource = payload.get('resource', {})
+    subscription_id = resource.get('id', '')
+
+    if not subscription_id or not event_type.startswith('BILLING.SUBSCRIPTION.'):
+        return jsonify({'received': True}), 200  # Ack unknown events
+
+    print(f'[Webhook] {event_type} — subscription {subscription_id}')
+
+    try:
+        sb = get_supabase()
+        res = sb.table('subscriptions').select('*') \
+            .eq('provider', 'paypal') \
+            .eq('provider_subscription_id', subscription_id) \
+            .execute()
+
+        if not res.data:
+            print(f'[Webhook] Unknown subscription: {subscription_id}')
+            return jsonify({'received': True}), 200
+
+        sub_record = res.data[0]
+        user_id = sub_record['user_id']
+        new_status = None
+
+        if event_type == 'BILLING.SUBSCRIPTION.ACTIVATED':
+            new_status = 'active'
+        elif event_type == 'BILLING.SUBSCRIPTION.CANCELLED':
+            new_status = 'cancelled'
+        elif event_type == 'BILLING.SUBSCRIPTION.EXPIRED':
+            new_status = 'expired'
+        elif event_type == 'BILLING.SUBSCRIPTION.SUSPENDED':
+            new_status = 'past_due'
+
+        if new_status:
+            updates = {'status': new_status}
+            if new_status in ('cancelled', 'expired'):
+                updates['cancelled_at'] = datetime.datetime.utcnow().isoformat()
+
+            # Fetch latest period info from PayPal
+            try:
+                sub_resp = requests.get(
+                    f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}',
+                    headers=paypal_headers()
+                )
+                if sub_resp.ok:
+                    sub_data = sub_resp.json()
+                    billing_info = sub_data.get('billing_info', {})
+                    updates['current_period_end'] = billing_info.get('next_billing_time')
+                    updates['provider_metadata'] = {
+                        **(sub_record.get('provider_metadata') or {}),
+                        'last_webhook_event': event_type,
+                        'last_webhook_at': datetime.datetime.utcnow().isoformat()
+                    }
+            except Exception:
+                pass
+
+            sb.table('subscriptions').update(updates).eq('id', sub_record['id']).execute()
+            sync_user_plan(user_id)
+            print(f'[Webhook] Updated subscription {subscription_id} → {new_status}')
+
+    except Exception as e:
+        print(f'[Webhook] Error processing {event_type}: {e}')
+        # Still return 200 to prevent PayPal retry storms
+
+    return jsonify({'received': True}), 200
+
+
+@app.route('/api/user/subscription', methods=['GET'])
+@require_auth
+def get_user_subscription(user_id):
+    """Return current user's subscription details."""
+    sb = get_supabase()
+    try:
+        res = sb.table('subscriptions').select('*') \
+            .eq('user_id', user_id) \
+            .order('created_at', desc=True) \
+            .limit(1) \
+            .execute()
+    except Exception:
+        return jsonify({'plan': 'free', 'subscription': None})
+
+    if not res.data:
+        return jsonify({
+            'plan': 'free',
+            'subscription': None
+        })
+
+    sub = res.data[0]
+    return jsonify({
+        'plan': sub.get('plan_tier', 'free') if sub.get('status') == 'active' else 'free',
+        'subscription': {
+            'provider': sub.get('provider'),
+            'status': sub.get('status'),
+            'plan_tier': sub.get('plan_tier'),
+            'current_period_end': sub.get('current_period_end'),
+            'cancel_at_period_end': sub.get('cancel_at_period_end', False),
+            'created_at': sub.get('created_at')
+        }
     })
 
 
