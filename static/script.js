@@ -113,6 +113,36 @@ const API = (() => {
 
 // ── PayPal Subscription ──────────────────────────────────────────────────
 const PayPal = {
+    _paypalRendered: false,
+
+    _bindCancelButton(btn) {
+        if (btn.dataset.bound) return; // already bound
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', async () => {
+            if (!confirm('Cancel auto-renewal?\nYou will keep premium access until the current billing period ends.')) return;
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Cancelling...';
+                const r = await PayPal.cancelSubscription();
+                if (r.success) {
+                    const res = await fetch('/api/user/subscription', { headers: { 'Authorization': 'Bearer ' + STATE.token } });
+                    const data = await res.json();
+                    STATE.user.plan = data.plan;
+                    STATE.user.subscription = data.subscription;
+                    localStorage.setItem('summarify_user', JSON.stringify(STATE.user));
+                    updateUI();
+                    loadUsage();
+                    toast(r.message || 'Auto-renewal cancelled', 'info');
+                }
+            } catch (e) {
+                toast(e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Cancel subscription';
+            }
+        });
+    },
+
     async createSubscription() {
         const resp = await fetch('/api/paypal/create-subscription', {
             method: 'POST',
@@ -160,6 +190,12 @@ const PayPal = {
         const subInfo = document.getElementById('subscription-info');
         const cancelBtn = document.getElementById('btn-cancel-subscription');
 
+        // Guard: remove any previously-rendered PayPal buttons
+        if (container) {
+            container.innerHTML = '';
+            PayPal._paypalRendered = false;
+        }
+
         // Determine whether to show the subscribe button
         const shouldShowSubscribe = STATE.token && STATE.user && STATE.user.plan !== 'premium';
         const isPremium = STATE.user && STATE.user.plan === 'premium';
@@ -186,6 +222,9 @@ const PayPal = {
                         }
                         if (cancelBtn && data.subscription.provider === 'paypal' && !isCancelAtEnd) {
                             cancelBtn.classList.remove('hidden');
+                            PayPal._bindCancelButton(cancelBtn);
+                        } else if (cancelBtn) {
+                            cancelBtn.classList.add('hidden');
                         }
                     }
                 }).catch(() => {});
@@ -206,8 +245,9 @@ const PayPal = {
         if (loginHint) loginHint.classList.add('hidden');
         if (premiumBadge) premiumBadge.classList.add('hidden');
 
-        // Render PayPal button using v2 JS SDK (if not already rendered)
-        if (window.paypal && typeof paypal.Buttons === 'function') {
+        // Render PayPal button using v2 JS SDK (guard against duplicate renders)
+        if (window.paypal && typeof paypal.Buttons === 'function' && !PayPal._paypalRendered) {
+            PayPal._paypalRendered = true;
             paypal.Buttons({
                 style: {
                     layout: 'vertical',
