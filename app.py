@@ -18,6 +18,7 @@ from functools import wraps
 from collections import defaultdict
 from threading import Lock
 import time
+import logging
 from urllib.parse import urlparse
 
 from flask import Flask, request, jsonify, send_from_directory, render_template, Response, stream_with_context
@@ -146,8 +147,9 @@ def get_active_subscription(user_id: str) -> dict | None:
             .limit(1) \
             .execute()
         return res.data[0] if res.data else None
-    except Exception:
-        return None  # Table not created yet
+    except Exception as e:
+        logging.warning(f"get_active_subscription failed (user={user_id}): {e}")
+        return None  # Graceful degradation
 
 
 def sync_user_plan(user_id: str) -> str:
@@ -161,7 +163,8 @@ def sync_user_plan(user_id: str) -> str:
         plan = 'premium' if active.data else 'free'
         sb.table('users').update({'plan': plan}).eq('id', user_id).execute()
         return plan
-    except Exception:
+    except Exception as e:
+        logging.warning(f"sync_user_plan failed (user={user_id}): {e}")
         # Fallback: read current plan from users table
         res = sb.table('users').select('plan').eq('id', user_id).execute()
         return res.data[0].get('plan', 'free') if res.data else 'free'
