@@ -1453,7 +1453,8 @@ def youtube_transcript(user_id, anon_id):
         # Try innertube API first (bypasses bot detection on Railway)
         try:
             transcript_text, language = _fetch_transcript_innertube(video_id)
-            segments = [{'text': transcript_text}]
+            if transcript_text and transcript_text.strip():
+                segments = [{'text': transcript_text}]
         except Exception:
             pass
 
