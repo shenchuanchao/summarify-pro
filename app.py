@@ -611,6 +611,48 @@ def ai_summarize_page():
 def pdf_summarizer_page():
     return render_template('pdf-summarizer.html')
 
+@app.route('/blog/')
+def blog_index():
+    articles = [
+        {
+            'slug': 'how-to-summarize-pdf-with-ai',
+            'title': 'How to Summarize a PDF with AI in 30 Seconds — Free Guide',
+            'excerpt': 'Learn how to use AI to summarize PDF documents instantly. Step-by-step guide for students, researchers, and professionals.',
+            'date': '2026-05-20',
+            'category': 'Tutorial',
+            'keywords': 'summarize PDF with AI, AI PDF summarizer free, summarize PDF online'
+        },
+        {
+            'slug': 'best-youtube-video-summarizers-2026',
+            'title': '5 Best Free YouTube Video Summarizers in 2026 (Tested & Ranked)',
+            'excerpt': 'We tested the top free YouTube summarizer tools. See which one delivers the most accurate summaries for lectures, podcasts, and tutorials.',
+            'date': '2026-05-22',
+            'category': 'Comparison',
+            'keywords': 'best YouTube video summarizer, free YouTube summary AI, YouTube to text summary'
+        },
+        {
+            'slug': 'summarize-research-papers-fast',
+            'title': 'How to Understand Research Papers Without Reading Every Page',
+            'excerpt': 'AI tools can extract key points from academic papers in minutes. Here is how grad students and researchers save hours every week.',
+            'date': '2026-05-24',
+            'category': 'Productivity',
+            'keywords': 'summarize research paper AI, read papers faster, academic paper summarizer'
+        }
+    ]
+    return render_template('blog/index.html', articles=articles)
+
+@app.route('/blog/<slug>')
+def blog_post(slug):
+    template_name = f'blog/{slug}.html'
+    try:
+        return render_template(template_name)
+    except:
+        return render_template('blog/index.html', articles=[
+            {'slug': 'how-to-summarize-pdf-with-ai', 'title': 'How to Summarize a PDF with AI in 30 Seconds', 'excerpt': 'Learn how to use AI to summarize PDF documents instantly.', 'date': '2026-05-20', 'category': 'Tutorial', 'keywords': ''},
+            {'slug': 'best-youtube-video-summarizers-2026', 'title': '5 Best Free YouTube Video Summarizers in 2026', 'excerpt': 'We tested the top free YouTube summarizer tools.', 'date': '2026-05-22', 'category': 'Comparison', 'keywords': ''},
+            {'slug': 'summarize-research-papers-fast', 'title': 'How to Understand Research Papers Without Reading Every Page', 'excerpt': 'AI tools can extract key points from academic papers in minutes.', 'date': '2026-05-24', 'category': 'Productivity', 'keywords': ''}
+        ]), 404
+
 # ── Auth Endpoints ─────────────────────────────────────────────────────
 
 @app.route('/api/user/register', methods=['POST'])

@@ -21,6 +21,26 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.summarifypro.com/blog/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.summarifypro.com/blog/how-to-summarize-pdf-with-ai</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.summarifypro.com/blog/best-youtube-video-summarizers-2026</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.summarifypro.com/blog/summarize-research-papers-fast</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.summarifypro.com/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

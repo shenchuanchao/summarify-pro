@@ -1,0 +1,79 @@
+{% set title = 'Blog — AI Summarizer Tips, Tutorials & Comparisons | Summarify Pro' %}
+{% set description = 'Expert guides on AI document summarization. Learn how to summarize PDFs, research papers, YouTube videos, and more with free AI tools.' %}
+{% set canonical = 'https://www.summarifypro.com/blog/' %}
+{% include '_head.html' %}
+
+<body class="bg-white text-gray-900 font-sans">
+{% include '_navbar.html' %}
+
+<!-- Hero -->
+<section class="pt-28 pb-12 bg-gradient-to-b from-blue-50 to-white">
+    <div class="max-w-5xl mx-auto px-4 text-center">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">Blog</h1>
+        <p class="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">Tips, tutorials, and comparisons to help you get more from AI document summarization.</p>
+    </div>
+</section>
+
+<!-- Articles Grid -->
+<section class="py-12 px-4">
+    <div class="max-w-5xl mx-auto">
+        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {% for article in articles %}
+            <a href="/blog/{{ article.slug }}" class="group block bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg hover:border-brand-200 transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-brand-600 bg-brand-50 px-2.5 py-1 rounded-full">{{ article.category }}</span>
+                        <span class="text-xs text-gray-400">{{ article.date }}</span>
+                    </div>
+                    <h2 class="text-lg font-bold text-gray-900 group-hover:text-brand-600 transition-colors leading-snug mb-2">{{ article.title }}</h2>
+                    <p class="text-sm text-gray-500 leading-relaxed">{{ article.excerpt }}</p>
+                    <span class="inline-flex items-center gap-1 mt-4 text-sm font-medium text-brand-600 group-hover:gap-2 transition-all">
+                        Read article
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% include '_footer.html' %}
+{% include '_modals.html' %}
+<script>
+/* Blog share functions - inline for blog pages that don't load script.js */
+function shareOn(platform) {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent('Summarify Pro - AI Document Summarizer');
+    let shareUrl = '';
+    switch (platform) {
+        case 'twitter':
+            shareUrl = 'https://twitter.com/intent/tweet?url=' + url + '&text=' + text + '&hashtags=AI,Summarizer,Productivity';
+            break;
+        case 'facebook':
+            shareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + url + '&quote=' + text;
+            break;
+        case 'linkedin':
+            shareUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url;
+            break;
+        case 'reddit':
+            shareUrl = 'https://www.reddit.com/submit?url=' + url + '&title=' + text;
+            break;
+        case 'whatsapp':
+            shareUrl = 'https://wa.me/?text=' + text + '%20' + url;
+            break;
+        default: return;
+    }
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+}
+function copyShareLink() {
+    navigator.clipboard.writeText(window.location.href).then(function() {
+        alert('Link copied to clipboard!');
+    }).catch(function() {
+        prompt('Copy this link:', window.location.href);
+    });
+}
+</script>
+
+</body>
+</html>
