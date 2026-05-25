@@ -561,8 +561,12 @@ def extract_url_text(url: str) -> str:
     resp = requests.get(url, headers=headers, timeout=30)
     resp.raise_for_status()
 
-    # ── PDF content ──
+    # Fix encoding for Chinese/non-UTF8 sites (GBK/GB2312/etc)
     content_type = resp.headers.get('Content-Type', '')
+    if 'charset' not in content_type.lower():
+        resp.encoding = resp.apparent_encoding
+
+    # ── PDF content ──
     if 'application/pdf' in content_type or url.lower().endswith('.pdf'):
         import io
         pdf_reader = PyPDF2.PdfReader(io.BytesIO(resp.content))
