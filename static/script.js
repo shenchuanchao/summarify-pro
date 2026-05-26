@@ -552,6 +552,18 @@ function clearFile(type) {
 function updateParseButton() {
     const actions = document.getElementById('parse-actions');
     if (!actions) return;
+
+    // Dedicated tool page (no tabs): show when any file is selected
+    if (!document.querySelector('.tab-btn')) {
+        if (STATE.pdfFile || STATE.wordFile) {
+            actions.classList.remove('hidden');
+        } else {
+            actions.classList.add('hidden');
+        }
+        return;
+    }
+
+    // Multi-tab page: tab-based logic
     const shouldShow = (STATE.currentTab === 'pdf' && STATE.pdfFile) ||
                        (STATE.currentTab === 'word' && STATE.wordFile) ||
                        STATE.currentTab === 'url';
@@ -587,12 +599,13 @@ async function handleParse() {
     showParseLoading(true);
     try {
         let data;
-        if (STATE.currentTab === 'pdf') {
-            if (!STATE.pdfFile) { toast('Please select a PDF file', 'error'); return; }
+        // Determine target from available data (works for both tabbed and dedicated pages)
+        if (STATE.pdfFile) {
             data = await API.parsePDF(STATE.pdfFile);
-        } else if (STATE.currentTab === 'word') {
-            if (!STATE.wordFile) { toast('Please select a Word file', 'error'); return; }
+        } else if (STATE.wordFile) {
             data = await API.parseWord(STATE.wordFile);
+        } else if (STATE.currentTab === 'url') {
+            return parseURL();
         } else {
             return parseURL();
         }

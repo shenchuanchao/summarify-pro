@@ -1,0 +1,293 @@
+{% set title = "免费 AI 文档总结工具 — Summarify Pro 中文版 | PDF/Word/网页一键总结" %}
+{% set description = "免费 AI 文档总结工具，支持 PDF、Word、网页链接一键生成摘要、要点提取和多语言翻译，无需注册登录，每日免费10次。" %}
+{% set canonical = "https://www.summarifypro.com/zh/" %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+{% include 'zh/_head.html' %}
+<body class="bg-gray-50 text-gray-900 antialiased">
+{% include 'zh/_navbar.html' %}
+
+<!-- ═══════ HERO ═══════ -->
+<section class="pt-32 pb-16 px-4">
+    <div class="max-w-4xl mx-auto text-center animate-slide-up">
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight">
+            任何文档，<br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-brand-800">一键总结。</span>
+        </h1>
+        <p class="mt-6 text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
+            上传 PDF、Word 文档，或粘贴网页链接，AI 自动提取内容并生成摘要、要点或翻译。无需注册，每日免费 10 次。
+        </p>
+    </div>
+</section>
+
+<!-- ═══════ 文本总结 ═══════ -->
+<section id="text-summarize" class="max-w-7xl mx-auto px-4 pb-16">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+            <!-- 左：文本输入 -->
+            <div class="p-6 sm:p-8 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+                        <span class="w-6 h-6 bg-brand-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-3.5 h-3.5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                        </span>
+                        文本总结
+                    </h3>
+                    <button id="paste-btn" class="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        粘贴
+                    </button>
+                </div>
+                <textarea id="text-input" rows="10" placeholder="在此粘贴或输入文本内容…" class="flex-1 w-full min-h-[300px] p-4 text-sm text-gray-700 border border-gray-200 rounded-xl resize-y focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow placeholder:text-gray-300"></textarea>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="handleTextAI('summarize')" class="flex-1 bg-brand-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors shadow-sm flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                        生成摘要
+                    </button>
+                    <button onclick="handleTextAI('keypoints')" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        提炼要点
+                    </button>
+                    <div class="flex-1 flex gap-1.5">
+                        <button onclick="handleTextAI('translate')" class="flex-1 bg-violet-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+                            翻译
+                        </button>
+                        <select id="text-target-lang" class="text-xs border border-gray-200 rounded-xl px-2 py-2.5 bg-white text-gray-700 outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer">
+                            <option value="English">EN</option>
+                            <option value="Chinese">中文</option>
+                            <option value="Spanish">ES</option>
+                            <option value="German">DE</option>
+                            <option value="Japanese">JP</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <!-- 右：结果展示 -->
+            <div class="p-6 sm:p-8 flex flex-col bg-gray-50/50">
+                <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <span class="w-6 h-6 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    </span>
+                    AI 结果
+                </h3>
+                <!-- 空状态 -->
+                <div id="text-placeholder" class="flex-1 flex flex-col items-center justify-center text-gray-400 py-8">
+                    <svg class="w-12 h-12 mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    <p class="text-sm">输入文本后点击上方按钮</p>
+                    <p class="text-xs mt-1">AI 将自动生成摘要、要点或翻译</p>
+                </div>
+                <!-- 加载 -->
+                <div id="text-loading" class="hidden flex-1 flex items-center justify-center gap-3 py-8 text-brand-600">
+                    <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    <span class="text-sm font-medium">AI 正在思考...</span>
+                </div>
+                <!-- 结果 -->
+                <div id="text-result" class="hidden flex-1 flex flex-col">
+                    <div class="flex items-center justify-end gap-2 mb-3">
+                        <button onclick="copyTextResult()" class="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-brand-600 bg-white hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors border border-gray-200">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            复制
+                        </button>
+                        <button onclick="downloadTextResult()" class="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-brand-600 bg-white hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors border border-gray-200">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            下载
+                        </button>
+                    </div>
+                    <div id="text-result-content" class="flex-1 text-sm text-gray-700 leading-relaxed p-4 bg-white rounded-xl border border-gray-100 min-h-[200px] max-h-80 overflow-y-auto whitespace-pre-wrap"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+// ── 剪贴板粘贴 ──
+document.getElementById('paste-btn').addEventListener('click', async () => {
+    try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+            document.getElementById('text-input').value = text;
+        }
+    } catch {
+        // fallback: focus textarea for manual paste
+        document.getElementById('text-input').focus();
+    }
+});
+
+// ── 文本 AI 入口 ──
+async function handleTextAI(action) {
+    const text = document.getElementById('text-input').value.trim();
+    if (!text) return;
+
+    // set STATE for runAI
+    window._textAiAction = action;
+    STATE.parsedText = text;
+
+    // show loading, hide placeholder
+    document.getElementById('text-placeholder').classList.add('hidden');
+    document.getElementById('text-result').classList.add('hidden');
+    document.getElementById('text-loading').classList.remove('hidden');
+
+    try {
+        const endpoint = '/api/ai/generate';
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Anon-Id': localStorage.getItem('summarify_anon_id') || crypto.randomUUID()
+        };
+        const body = {
+            action: action,
+            content: text
+        };
+
+        const resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'AI request failed');
+
+        document.getElementById('text-result-content').textContent = data.result;
+        window._textResult = data.result;
+
+        document.getElementById('text-loading').classList.add('hidden');
+        document.getElementById('text-result').classList.remove('hidden');
+    } catch (e) {
+        document.getElementById('text-loading').classList.add('hidden');
+        document.getElementById('text-placeholder').classList.remove('hidden');
+        alert('❌ ' + (e.message || '请求失败'));
+    }
+}
+
+// ── 复制/下载 ──
+function copyTextResult() {
+    if (!window._textResult) return;
+    navigator.clipboard.writeText(window._textResult).then(() => {
+        // brief visual feedback
+    }).catch(() => {});
+}
+function downloadTextResult() {
+    if (!window._textResult) return;
+    const blob = new Blob([window._textResult], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'summarify-result.txt';
+    a.click();
+}
+</script>
+
+<!-- ═══════ 三个工具入口卡片 ═══════ -->
+<section class="max-w-4xl mx-auto px-4 pb-16">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- PDF -->
+        <a href="/zh/pdf-summarizer" class="group bg-white rounded-2xl border border-gray-200 p-6 hover:border-brand-300 hover:shadow-lg transition-all">
+            <div class="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-brand-200 transition-colors">
+                <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2 group-hover:text-brand-700 transition-colors">PDF 总结</h3>
+            <p class="text-sm text-gray-500 leading-relaxed mb-4">上传 PDF 文件，AI 自动提取文字并生成摘要、要点或翻译。</p>
+            <span class="text-sm font-medium text-brand-600 group-hover:text-brand-700">开始使用 →</span>
+        </a>
+        <!-- Word -->
+        <a href="/zh/word-summarizer" class="group bg-white rounded-2xl border border-gray-200 p-6 hover:border-brand-300 hover:shadow-lg transition-all">
+            <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2 group-hover:text-emerald-700 transition-colors">Word 总结</h3>
+            <p class="text-sm text-gray-500 leading-relaxed mb-4">上传 Word 文档，AI 自动提取文字并生成摘要、要点或翻译。</p>
+            <span class="text-sm font-medium text-emerald-600 group-hover:text-emerald-700">开始使用 →</span>
+        </a>
+        <!-- URL -->
+        <a href="/zh/url-summarizer" class="group bg-white rounded-2xl border border-gray-200 p-6 hover:border-brand-300 hover:shadow-lg transition-all">
+            <div class="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-violet-200 transition-colors">
+                <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2 group-hover:text-violet-700 transition-colors">网页解析</h3>
+            <p class="text-sm text-gray-500 leading-relaxed mb-4">粘贴网页链接，AI 自动抓取内容并生成摘要、要点或翻译。</p>
+            <span class="text-sm font-medium text-violet-600 group-hover:text-violet-700">开始使用 →</span>
+        </a>
+    </div>
+</section>
+
+<!-- ═══════ 功能特点 ═══════ -->
+<section class="py-20 px-4 bg-white border-t border-gray-100">
+    <div class="max-w-5xl mx-auto text-center mb-14">
+        <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-4 py-1.5 rounded-full">功能特点</span>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900">你需要的全在这里</h2>
+        <p class="mt-3 text-gray-500 max-w-xl mx-auto">由先进的 AI 大模型驱动的专业文档处理工具。</p>
+    </div>
+    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-brand-200 hover:shadow-md transition-all">
+            <div class="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2">多格式上传</h3>
+            <p class="text-sm text-gray-500 leading-relaxed">拖放上传 PDF、Word 文档，或粘贴网页链接。自动提取纯文本，处理流畅。</p>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-brand-200 hover:shadow-md transition-all">
+            <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2">AI 智能分析</h3>
+            <p class="text-sm text-gray-500 leading-relaxed">基于智谱 GLM 和 DeepSeek 大模型，秒速生成精准摘要和要点提炼。</p>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-brand-200 hover:shadow-md transition-all">
+            <div class="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2">多语言翻译</h3>
+            <p class="text-sm text-gray-500 leading-relaxed">支持中文、英文、西班牙语、德语、日语等语言互译，即时翻译整篇文档。</p>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════ 使用说明 ═══════ -->
+<section class="py-20 px-4 bg-gray-50">
+    <div class="max-w-5xl mx-auto text-center mb-14">
+        <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-4 py-1.5 rounded-full">使用说明</span>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900">三步搞定</h2>
+        <p class="mt-3 text-gray-500 max-w-xl mx-auto">无需注册，打开即用。</p>
+    </div>
+    <div class="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div class="text-center">
+            <div class="w-14 h-14 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span class="text-2xl font-extrabold text-brand-600">1</span>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2">上传文档</h3>
+            <p class="text-sm text-gray-500">拖放 PDF/Word 文件，或粘贴网页链接，自动解析文本内容。</p>
+        </div>
+        <div class="text-center">
+            <div class="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span class="text-2xl font-extrabold text-emerald-600">2</span>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2">选择操作</h3>
+            <p class="text-sm text-gray-500">点击生成摘要、提炼要点或翻译，AI 即刻开始处理。</p>
+        </div>
+        <div class="text-center">
+            <div class="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span class="text-2xl font-extrabold text-violet-600">3</span>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-2">获取结果</h3>
+            <p class="text-sm text-gray-500">秒出结果，一键复制或下载为 TXT 文件。</p>
+        </div>
+    </div>
+</section>
+
+{% include 'zh/_footer.html' %}
+<script src="/script.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Summarify Pro 中文版",
+  "url": "https://www.summarifypro.com/zh/",
+  "description": "免费 AI 文档总结工具，支持 PDF、Word、网页链接一键生成摘要、要点提取和多语言翻译，无需注册登录，每日免费10次。",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "browserRequirements": "Requires JavaScript"
+}
+</script>
+</body>
+</html>

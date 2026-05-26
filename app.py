@@ -335,7 +335,7 @@ def record_daily_usage(user_id: str):
 
 # ── Anonymous Usage Tracking ──────────────────────────────────────────
 
-ANON_DAILY_LIMIT = 3
+ANON_DAILY_LIMIT = 10
 
 def check_anon_usage(anon_id: str, ip: str):
     """
@@ -656,6 +656,24 @@ def blog_post(slug):
             {'slug': 'best-youtube-video-summarizers-2026', 'title': '5 Best Free YouTube Video Summarizers in 2026', 'excerpt': 'We tested the top free YouTube summarizer tools.', 'date': '2026-05-22', 'category': 'Comparison', 'keywords': ''},
             {'slug': 'summarize-research-papers-fast', 'title': 'How to Understand Research Papers Without Reading Every Page', 'excerpt': 'AI tools can extract key points from academic papers in minutes.', 'date': '2026-05-24', 'category': 'Productivity', 'keywords': ''}
         ]), 404
+
+# ── Chinese (/zh/) Pages ──────────────────────────────────────────────
+
+@app.route('/zh/')
+def zh_index():
+    return render_template('zh/index.html')
+
+@app.route('/zh/pdf-summarizer')
+def zh_pdf():
+    return render_template('zh/pdf-summarizer.html')
+
+@app.route('/zh/word-summarizer')
+def zh_word():
+    return render_template('zh/word-summarizer.html')
+
+@app.route('/zh/url-summarizer')
+def zh_url():
+    return render_template('zh/url-summarizer.html')
 
 # ── Auth Endpoints ─────────────────────────────────────────────────────
 
@@ -1530,8 +1548,8 @@ def ai_generate(user_id, anon_id):
         'summarize': (
             "You are a professional document analyst. Please provide a **concise, well-structured summary** "
             "of the following document. IMPORTANT: You MUST respond in the **same language** as the document. "
-            "Organize the summary with clear sections (e.g., Overview, Key Findings, "
-            "Conclusion). Keep it professional and to the point.\n\nDocument:\n{text}"
+            "The summary MUST NOT exceed 250 characters (including spaces and punctuation). "
+            "Be concise and professional.\n\nDocument:\n{text}"
         ),
         'keypoints': (
             "You are a professional document analyst. Please **extract the most important key points** from the "

@@ -1,0 +1,26 @@
+<!-- ══════════════════════ 中文导航栏 ══════════════════════ -->
+<nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/60 transition-shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+{% set active = nav_active|default('') %}
+        <div class="flex items-center justify-between h-16">
+            <!-- Logo -->
+            <a href="/zh/" class="flex items-center gap-2.5 font-bold text-xl text-brand-700 shrink-0">
+                <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="url(#g)"/><path d="M8 16h4l3-8 4 16 3-8h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#3b82f6"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient></defs></svg>
+                <span class="text-sm sm:text-xl">Summarify <span class="text-brand-600">Pro</span></span>
+            </a>
+
+            <!-- 桌面端导航链接 -->
+            <div class="hidden sm:flex items-center gap-1">
+                <a href="/zh/pdf-summarizer" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active == 'pdf' %}text-brand-700 bg-brand-50{% else %}text-gray-600 hover:text-brand-700 hover:bg-brand-50{% endif %}">PDF 总结</a>
+                <a href="/zh/word-summarizer" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active == 'word' %}text-brand-700 bg-brand-50{% else %}text-gray-600 hover:text-brand-700 hover:bg-brand-50{% endif %}">Word 总结</a>
+                <a href="/zh/url-summarizer" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active == 'url' %}text-brand-700 bg-brand-50{% else %}text-gray-600 hover:text-brand-700 hover:bg-brand-50{% endif %}">网页解析</a>
+            </div>
+
+            <!-- 右侧：语言切换 + 用量 -->
+            <div class="flex items-center gap-3 shrink-0">
+                <a href="/" class="text-xs font-medium text-gray-400 hover:text-brand-600 transition-colors px-2 py-1">English</a>
+                <span id="usage-badge" class="hidden text-xs font-medium px-2 sm:px-3 py-1 rounded-full border truncate max-w-[160px] sm:max-w-[200px]"></span>
+            </div>
+        </div>
+    </div>
+</nav>
