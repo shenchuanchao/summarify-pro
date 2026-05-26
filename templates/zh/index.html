@@ -137,7 +137,8 @@ async function handleTextAI(action) {
         };
         const body = {
             action: action,
-            content: text
+            content: text,
+            stream: false
         };
 
         const resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });

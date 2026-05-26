@@ -1537,6 +1537,7 @@ def ai_generate(user_id, anon_id):
     action = (data.get('action') or '').strip()
     content = (data.get('content') or '').strip()
     target_lang = (data.get('target_lang') or 'Chinese').strip()
+    do_stream = data.get('stream', True)
 
     if not action or not content:
         return jsonify({'error': 'Both action and content are required'}), 400
@@ -1575,6 +1576,30 @@ def ai_generate(user_id, anon_id):
 
     prompt = PROMPTS[action].replace('{text}', content).replace('{lang}', target_lang)
 
+    # Non-streaming mode: collect all chunks and return plain JSON
+    if not do_stream:
+        token_limit = 8192 if action == 'translate' else 1024
+        result_text = ''
+        error_msg = None
+        for chunk_json in call_ai_stream(
+            messages=[{'role': 'user', 'content': prompt}],
+            temperature=0.5,
+            max_tokens=token_limit
+        ):
+            try:
+                chunk = json.loads(chunk_json)
+                if 'error' in chunk:
+                    error_msg = chunk['error']
+                    break
+                if 'ac' in chunk:
+                    result_text += chunk['ac']
+            except Exception:
+                pass
+        if error_msg:
+            return jsonify({'error': error_msg}), 500
+        return jsonify({'result': result_text, 'action': action})
+
+    # Streaming mode (default)
     def generate():
         yield f"data: {json.dumps({'action': action})}\n\n"
         token_limit = 8192 if action == 'translate' else 1024
