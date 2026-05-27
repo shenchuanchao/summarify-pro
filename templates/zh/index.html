@@ -120,10 +120,6 @@ async function handleTextAI(action) {
     const text = document.getElementById('text-input').value.trim();
     if (!text) return;
 
-    // set STATE for runAI
-    window._textAiAction = action;
-    STATE.parsedText = text;
-
     // show loading, hide placeholder
     document.getElementById('text-placeholder').classList.add('hidden');
     document.getElementById('text-result').classList.add('hidden');
