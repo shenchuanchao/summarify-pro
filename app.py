@@ -1591,8 +1591,8 @@ def ai_generate(user_id, anon_id):
                 if 'error' in chunk:
                     error_msg = chunk['error']
                     break
-                if 'ac' in chunk:
-                    result_text += chunk['ac']
+                if 'content' in chunk:
+                    result_text += chunk['content']
             except Exception:
                 pass
         if error_msg:
