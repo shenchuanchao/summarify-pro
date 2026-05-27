@@ -614,6 +614,12 @@ def ai_summarize_page():
 @app.route('/pdf-summarizer')
 def pdf_summarizer_page():
     return render_template('pdf-summarizer.html')
+    
+# ── YouTube Summarizer Page ──────────────────────────────────────────────
+
+@app.route('/youtube-summarizer')
+def youtube_summarizer_page():
+    return render_template('youtube.html')
 
 @app.route('/blog/')
 def blog_index():
@@ -1521,11 +1527,6 @@ def youtube_transcript(user_id, anon_id):
         return jsonify({'error': 'Unable to fetch transcript for this video. Please try another video.'}), 400
 
 
-# ── YouTube Summarizer Page ──────────────────────────────────────────────
-
-@app.route('/youtube-summarizer')
-def youtube_summarizer_page():
-    return render_template('youtube.html')
 
 
 # ── AI Generate Endpoint ───────────────────────────────────────────────
