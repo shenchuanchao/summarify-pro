@@ -2,7 +2,6 @@
 Summarify Pro — Backend API Server
 AI Document Summarizer — International Edition
 Powered by Zhipu AI GLM-4-Flash
-PayPal-powered Premium subscription (monthly)
 """
 
 import os
@@ -92,100 +91,6 @@ def get_supabase() -> Client:
             )
         _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
     return _supabase_client
-
-# ── PayPal Client ──────────────────────────────────────────────────────
-
-PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID', '')
-PAYPAL_CLIENT_SECRET = os.getenv('PAYPAL_CLIENT_SECRET', '')
-PAYPAL_MODE = os.getenv('PAYPAL_MODE', 'sandbox')  # 'sandbox' or 'live'
-
-PAYPAL_API_BASE = os.getenv('PAYPAL_API_BASE', '')
-PAYPAL_BASE = (
-    PAYPAL_API_BASE if PAYPAL_API_BASE
-    else 'https://api-m.sandbox.paypal.com' if PAYPAL_MODE == 'sandbox'
-    else 'https://api-m.paypal.com'
-)
-
-_paypal_token_cache = {'token': None, 'expires_at': 0}
-
-
-def get_paypal_token() -> str:
-    """OAuth 2.0 → access_token, cached until near expiry."""
-    now = time.time()
-    if _paypal_token_cache['token'] and now < _paypal_token_cache['expires_at'] - 60:
-        return _paypal_token_cache['token']
-    resp = requests.post(
-        f'{PAYPAL_BASE}/v1/oauth2/token',
-        auth=(PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET),
-        data={'grant_type': 'client_credentials'},
-        headers={'Accept': 'application/json'}
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    _paypal_token_cache['token'] = data['access_token']
-    _paypal_token_cache['expires_at'] = now + data.get('expires_in', 32400)
-    return data['access_token']
-
-
-def paypal_headers():
-    """Return auth + content-type headers for PayPal API."""
-    return {
-        'Authorization': f'Bearer {get_paypal_token()}',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
-
-# ── Subscription Helpers ───────────────────────────────────────────────
-
-def get_active_subscription(user_id: str) -> dict | None:
-    """Get the user's active subscription (any provider).
-    Returns None if no subscription or if subscriptions table doesn't exist yet."""
-    sb = get_supabase()
-    try:
-        res = sb.table('subscriptions').select('*') \
-            .eq('user_id', user_id) \
-            .eq('status', 'active') \
-            .order('created_at', desc=True) \
-            .limit(1) \
-            .execute()
-        return res.data[0] if res.data else None
-    except Exception as e:
-        logging.warning(f"get_active_subscription failed (user={user_id}): {e}")
-        return None  # Graceful degradation
-
-
-def sync_user_plan(user_id: str) -> str:
-    """Sync users.plan based on whether any active subscription exists."""
-    sb = get_supabase()
-    try:
-        active = sb.table('subscriptions').select('id') \
-            .eq('user_id', user_id) \
-            .eq('status', 'active') \
-            .execute()
-        plan = 'premium' if active.data else 'free'
-        sb.table('users').update({'plan': plan}).eq('id', user_id).execute()
-        return plan
-    except Exception as e:
-        logging.warning(f"sync_user_plan failed (user={user_id}): {e}")
-        # Fallback: read current plan from users table
-        res = sb.table('users').select('plan').eq('id', user_id).execute()
-        return res.data[0].get('plan', 'free') if res.data else 'free'
-
-
-def get_subscription_info(user_id: str) -> dict:
-    """Return subscription summary for user info responses."""
-    sub = get_active_subscription(user_id)
-    if not sub:
-        return {'plan': 'free', 'subscription': None}
-    return {
-        'plan': sub.get('plan_tier', 'premium'),
-        'subscription': {
-            'provider': sub.get('provider'),
-            'status': sub.get('status'),
-            'current_period_end': sub.get('current_period_end'),
-            'cancel_at_period_end': sub.get('cancel_at_period_end', False)
-        }
-    }
 
 # ── Auth Utilities ─────────────────────────────────────────────────────
 
@@ -282,56 +187,18 @@ def rate_limit(max_requests: int = 10, window_seconds: int = 60):
 def check_daily_usage(user_id: str):
     """
     Check remaining usage WITHOUT incrementing.
+    Logged-in users have unlimited usage.
     Returns (allowed: bool, remaining: int or None for unlimited).
     """
-    sb = get_supabase()
-    res = sb.table('users').select('*').eq('id', user_id).execute()
-    users = res.data or []
-    if not users:
-        return False, 0
-    user = users[0]
-    if user.get('plan') == 'premium':
-        return True, None  # None = unlimited
-
-    today = datetime.datetime.now().strftime('%Y-%m-%d')
-    last_date = (user.get('last_usage_date') or '')
-    daily_count = user.get('daily_usage_count', 0)
-
-    if last_date != today:
-        return True, 10  # fresh day, 10 remaining
-
-    remaining = 10 - daily_count
-    if remaining > 0:
-        return True, remaining
-    return False, 0
+    return True, None  # Logged-in: unlimited
 
 
 def record_daily_usage(user_id: str):
     """
-    Record one usage for a logged-in user (only for free plan).
-    Returns new remaining count (or None for premium).
+    Record one usage. Logged-in users are unlimited — no-op.
+    Returns None (unlimited).
     """
-    sb = get_supabase()
-    res = sb.table('users').select('plan,daily_usage_count,last_usage_date').eq('id', user_id).execute()
-    if not res.data:
-        return 0
-    user = res.data[0]
-    if user.get('plan') == 'premium':
-        return None
-
-    today = datetime.datetime.now().strftime('%Y-%m-%d')
-    last_date = (user.get('last_usage_date') or '')
-
-    if last_date != today:
-        sb.table('users').update({
-            'daily_usage_count': 1,
-            'last_usage_date': today
-        }).eq('id', user_id).execute()
-        return 9
-
-    new_count = user.get('daily_usage_count', 0) + 1
-    sb.table('users').update({'daily_usage_count': new_count}).eq('id', user_id).execute()
-    return 10 - new_count
+    return None  # Logged-in: unlimited
 
 # ── Anonymous Usage Tracking ──────────────────────────────────────────
 
@@ -402,7 +269,7 @@ def check_usage(user_id=None, anon_id=None, ip=None):
 def record_usage(user_id=None, anon_id=None, ip=None):
     """
     Record one usage after a successful operation.
-    Returns new remaining count (or None for premium/unlimited).
+    Returns new remaining count (or None for unlimited).
     """
     if user_id:
         return record_daily_usage(user_id)
@@ -590,10 +457,7 @@ def extract_url_text(url: str) -> str:
 
 @app.route('/')
 def index():
-    return render_template('index.html',
-                           paypal_client_id=PAYPAL_CLIENT_ID,
-                           paypal_mode=PAYPAL_MODE,
-                           paypal_plan_id=os.getenv('PAYPAL_PLAN_ID', ''))
+    return render_template('index.html')
 
 @app.route('/login')
 def login_page():
@@ -722,14 +586,12 @@ def register():
     new_user = insert_res.data[0]
     token = generate_token(new_user['id'])
 
-    sub_info = get_subscription_info(new_user['id'])
     return jsonify({
         'token': token,
         'user': {
             'id': new_user['id'],
             'email': new_user['email'],
-            'plan': sub_info['plan'],
-            'subscription': sub_info['subscription']
+            'plan': 'registered'
         }
     })
 
@@ -763,15 +625,13 @@ def login():
         sb.table('users').update({'password_hash': new_hash}).eq('id', user['id']).execute()
 
     token = generate_token(user['id'])
-    sub_info = get_subscription_info(user['id'])
 
     return jsonify({
         'token': token,
         'user': {
             'id': user['id'],
             'email': user['email'],
-            'plan': sub_info['plan'],
-            'subscription': sub_info['subscription']
+            'plan': 'registered'
         }
     })
 
@@ -780,44 +640,12 @@ def login():
 @flex_auth
 def get_usage(user_id, anon_id):
     if user_id:
-        sb = get_supabase()
-        res = sb.table('users').select(
-            'plan, daily_usage_count, last_usage_date'
-        ).eq('id', user_id).execute()
-
-        if not res.data:
-            return jsonify({'error': 'User not found'}), 404
-
-        user = res.data[0]
-        today = datetime.datetime.now().strftime('%Y-%m-%d')
-
-        # Check subscriptions table for premium (not just users.plan)
-        active_sub = get_active_subscription(user_id)
-        if active_sub:
-            return jsonify({
-                'plan': 'premium',
-                'daily_limit': None,
-                'used_today': 0,
-                'remaining': None,
-                'subscription': {
-                    'provider': active_sub['provider'],
-                    'status': active_sub['status'],
-                    'current_period_end': active_sub.get('current_period_end'),
-                    'cancel_at_period_end': active_sub.get('cancel_at_period_end', False)
-                }
-            })
-
-        if user.get('last_usage_date') != today:
-            used, remaining = 0, 10
-        else:
-            used = user.get('daily_usage_count', 0)
-            remaining = max(0, 10 - used)
-
+        # Logged-in users have unlimited usage
         return jsonify({
-            'plan': 'free',
-            'daily_limit': 10,
-            'used_today': used,
-            'remaining': remaining
+            'plan': 'registered',
+            'daily_limit': None,
+            'used_today': 0,
+            'remaining': None
         })
     else:
         # Anonymous user
@@ -864,359 +692,6 @@ def submit_feedback():
     return jsonify({'success': True, 'message': 'Thank you for your feedback!'})
 
 
-# ── PayPal Endpoints ───────────────────────────────────────────────────
-
-@app.route('/api/paypal/create-subscription', methods=['POST'])
-@require_auth
-def create_paypal_subscription(user_id):
-    """Create a PayPal subscription for the user."""
-    if not PAYPAL_CLIENT_ID or not PAYPAL_CLIENT_SECRET:
-        return jsonify({'error': 'PayPal not configured on server'}), 500
-
-    plan_id = os.getenv('PAYPAL_PLAN_ID', '')
-    if not plan_id:
-        return jsonify({'error': 'PayPal Plan ID not configured'}), 500
-
-    sb = get_supabase()
-    res = sb.table('users').select('email').eq('id', user_id).execute()
-    if not res.data:
-        return jsonify({'error': 'User not found'}), 404
-    email = res.data[0]['email']
-
-    origin = request.headers.get('Origin', 'http://localhost:5000')
-
-    try:
-        resp = requests.post(
-            f'{PAYPAL_BASE}/v1/billing/subscriptions',
-            headers=paypal_headers(),
-            json={
-                'plan_id': plan_id,
-                'custom_id': user_id,
-                'subscriber': {
-                    'name': {'given_name': 'User'},
-                    'email_address': email
-                },
-                'application_context': {
-                    'brand_name': 'Summarify Pro',
-                    'user_action': 'SUBSCRIBE_NOW',
-                    'shipping_preference': 'NO_SHIPPING',
-                    'return_url': f'{origin}/?checkout=success',
-                    'cancel_url': f'{origin}/?checkout=cancelled'
-                }
-            }
-        )
-        resp.raise_for_status()
-        data = resp.json()
-
-        # Extract approval URL from HATEOAS links
-        approve_link = next(
-            (l['href'] for l in data.get('links', []) if l['rel'] == 'approve'),
-            None
-        )
-        if not approve_link:
-            return jsonify({'error': 'No approval URL from PayPal'}), 500
-
-        return jsonify({
-            'subscription_id': data['id'],
-            'approve_url': approve_link
-        })
-    except requests.exceptions.HTTPError as e:
-        err_detail = ''
-        try:
-            err_detail = e.response.json().get('message', str(e))
-        except Exception:
-            err_detail = str(e)
-        return jsonify({'error': f'PayPal error: {err_detail}'}), 500
-    except Exception as e:
-        return jsonify({'error': f'Failed to create subscription: {str(e)}'}), 500
-
-
-@app.route('/api/paypal/activate-subscription', methods=['POST'])
-@require_auth
-def activate_paypal_subscription(user_id):
-    """Activate a PayPal subscription after user approval.
-    Called by the frontend after the PayPal popup closes (onApprove).
-
-    1. Fetch subscription from PayPal API
-    2. Validate custom_id matches authenticated user
-    3. Upsert into subscriptions table
-    4. Sync users.plan
-    """
-    data = request.get_json(silent=True) or {}
-    subscription_id = data.get('subscription_id', '').strip()
-    if not subscription_id:
-        return jsonify({'error': 'subscription_id is required'}), 400
-
-    try:
-        # 1. Fetch subscription details from PayPal
-        resp = requests.get(
-            f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}',
-            headers=paypal_headers()
-        )
-        resp.raise_for_status()
-        sub = resp.json()
-
-        status = sub.get('status', '')
-        if status not in ('ACTIVE', 'APPROVAL_PENDING'):
-            return jsonify({'error': f'Subscription not active (status: {status})'}), 400
-
-        # 2. Validate custom_id belongs to this user
-        custom_id = sub.get('custom_id', '')
-        if custom_id and custom_id != user_id:
-            return jsonify({'error': 'Subscription does not belong to this user'}), 403
-
-        # 3. If APPROVAL_PENDING, activate it on PayPal side
-        if status == 'APPROVAL_PENDING':
-            resp2 = requests.post(
-                f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}/activate',
-                headers=paypal_headers(),
-                json={}
-            )
-            resp2.raise_for_status()
-            # Refetch to get updated status & billing info
-            resp = requests.get(
-                f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}',
-                headers=paypal_headers()
-            )
-            resp.raise_for_status()
-            sub = resp.json()
-
-        # 4. Extract billing cycle info
-        billing_info = sub.get('billing_info', {})
-        next_billing = billing_info.get('next_billing_time', None)
-        last_payment = billing_info.get('last_payment', {})
-        period_end = next_billing or (
-            last_payment.get('time', None) if last_payment else None
-        )
-
-        # 5. Upsert into subscriptions table (generic)
-        sb = get_supabase()
-        existing = sb.table('subscriptions').select('id') \
-            .eq('user_id', user_id) \
-            .eq('provider', 'paypal') \
-            .eq('provider_subscription_id', subscription_id) \
-            .execute()
-
-        sub_record = {
-            'user_id': user_id,
-            'provider': 'paypal',
-            'provider_subscription_id': subscription_id,
-            'status': 'active',
-            'plan_tier': 'premium',
-            'current_period_end': period_end,
-            'cancel_at_period_end': False,
-            'provider_metadata': {
-                'paypal_plan_id': sub.get('plan_id', ''),
-                'subscriber_email': (sub.get('subscriber', {}) or {}).get('email_address', ''),
-                'last_updated': datetime.datetime.utcnow().isoformat()
-            }
-        }
-
-        if existing.data:
-            sb.table('subscriptions').update(sub_record) \
-                .eq('id', existing.data[0]['id']).execute()
-        else:
-            # Cancel any previous active PayPal subscription for this user
-            sb.table('subscriptions').update({'status': 'cancelled', 'cancelled_at': 'now()'}) \
-                .eq('user_id', user_id) \
-                .eq('provider', 'paypal') \
-                .eq('status', 'active') \
-                .execute()
-            sb.table('subscriptions').insert(sub_record).execute()
-
-        # 6. Sync users.plan
-        sync_user_plan(user_id)
-
-        return jsonify({
-            'success': True,
-            'plan': 'premium',
-            'subscription_id': subscription_id,
-            'current_period_end': period_end
-        })
-    except requests.exceptions.HTTPError as e:
-        err_detail = ''
-        try:
-            err_detail = e.response.json().get('message', str(e))
-        except Exception:
-            err_detail = str(e)
-        return jsonify({'error': f'PayPal error: {err_detail}'}), 500
-    except Exception as e:
-        return jsonify({'error': f'Failed to activate subscription: {str(e)}'}), 500
-
-
-@app.route('/api/paypal/cancel-subscription', methods=['POST'])
-@require_auth
-def cancel_paypal_subscription(user_id):
-    """Cancel auto-renewal — user keeps premium until current period ends."""
-    sb = get_supabase()
-    try:
-        res = sb.table('subscriptions').select('*') \
-            .eq('user_id', user_id) \
-            .eq('provider', 'paypal') \
-            .eq('status', 'active') \
-            .execute()
-        if not res.data:
-            return jsonify({'error': 'No active PayPal subscription found'}), 400
-
-        sub = res.data[0]
-
-        # Mark cancel-at-period-end — do NOT call PayPal cancel API
-        # (PayPal will attempt renewal; if it fails or plan doesn't auto-renew,
-        #  the webhook EXPIRED event will handle actual downgrade)
-        sb.table('subscriptions').update({
-            'cancel_at_period_end': True,
-            'cancelled_at': datetime.datetime.utcnow().isoformat()
-        }).eq('id', sub['id']).execute()
-
-        # Refresh subscription info for response
-        info = get_subscription_info(user_id)
-
-        return jsonify({
-            'success': True,
-            'plan': info['plan'],
-            'subscription': info['subscription'],
-            'message': 'Auto-renewal cancelled. Your premium access continues until the current period ends.'
-        })
-    except requests.exceptions.HTTPError as e:
-        err_detail = ''
-        try:
-            err_detail = e.response.json().get('message', str(e))
-        except Exception:
-            err_detail = str(e)
-        return jsonify({'error': f'PayPal error: {err_detail}'}), 500
-    except Exception as e:
-        return jsonify({'error': f'Failed to cancel subscription: {str(e)}'}), 500
-
-
-@app.route('/api/paypal/get-status', methods=['GET'])
-def get_paypal_status():
-    """Get PayPal configuration status for the frontend."""
-    return jsonify({
-        'configured': bool(PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET),
-        'mode': PAYPAL_MODE,
-        'has_plan_id': bool(os.getenv('PAYPAL_PLAN_ID', ''))
-    })
-
-
-@app.route('/api/paypal/webhook', methods=['POST'])
-def paypal_webhook():
-    """Handle PayPal subscription lifecycle events.
-
-    ⚠️ REQUIRES PayPal BUSINESS account. Personal accounts cannot use webhooks.
-    Webhook URL must be registered at: PayPal Developer Dashboard → Webhooks
-
-    Events handled:
-    - BILLING.SUBSCRIPTION.ACTIVATED   → subscription started
-    - BILLING.SUBSCRIPTION.CANCELLED   → subscription cancelled
-    - BILLING.SUBSCRIPTION.EXPIRED     → subscription expired
-    - BILLING.SUBSCRIPTION.SUSPENDED   → payment failed, subscription suspended
-    - BILLING.SUBSCRIPTION.PAYMENT.FAILED → single payment failure
-    """
-    payload = request.get_json(silent=True)
-    if not payload:
-        return jsonify({'error': 'Invalid payload'}), 400
-
-    event_type = payload.get('event_type', '')
-    resource = payload.get('resource', {})
-    subscription_id = resource.get('id', '')
-
-    if not subscription_id or not event_type.startswith('BILLING.SUBSCRIPTION.'):
-        return jsonify({'received': True}), 200  # Ack unknown events
-
-    print(f'[Webhook] {event_type} — subscription {subscription_id}')
-
-    try:
-        sb = get_supabase()
-        res = sb.table('subscriptions').select('*') \
-            .eq('provider', 'paypal') \
-            .eq('provider_subscription_id', subscription_id) \
-            .execute()
-
-        if not res.data:
-            print(f'[Webhook] Unknown subscription: {subscription_id}')
-            return jsonify({'received': True}), 200
-
-        sub_record = res.data[0]
-        user_id = sub_record['user_id']
-        new_status = None
-
-        if event_type == 'BILLING.SUBSCRIPTION.ACTIVATED':
-            new_status = 'active'
-        elif event_type == 'BILLING.SUBSCRIPTION.CANCELLED':
-            new_status = 'cancelled'
-        elif event_type == 'BILLING.SUBSCRIPTION.EXPIRED':
-            new_status = 'expired'
-        elif event_type == 'BILLING.SUBSCRIPTION.SUSPENDED':
-            new_status = 'past_due'
-
-        if new_status:
-            updates = {'status': new_status}
-            if new_status in ('cancelled', 'expired'):
-                updates['cancelled_at'] = datetime.datetime.utcnow().isoformat()
-
-            # Fetch latest period info from PayPal
-            try:
-                sub_resp = requests.get(
-                    f'{PAYPAL_BASE}/v1/billing/subscriptions/{subscription_id}',
-                    headers=paypal_headers()
-                )
-                if sub_resp.ok:
-                    sub_data = sub_resp.json()
-                    billing_info = sub_data.get('billing_info', {})
-                    updates['current_period_end'] = billing_info.get('next_billing_time')
-                    updates['provider_metadata'] = {
-                        **(sub_record.get('provider_metadata') or {}),
-                        'last_webhook_event': event_type,
-                        'last_webhook_at': datetime.datetime.utcnow().isoformat()
-                    }
-            except Exception:
-                pass
-
-            sb.table('subscriptions').update(updates).eq('id', sub_record['id']).execute()
-            sync_user_plan(user_id)
-            print(f'[Webhook] Updated subscription {subscription_id} → {new_status}')
-
-    except Exception as e:
-        print(f'[Webhook] Error processing {event_type}: {e}')
-        # Still return 200 to prevent PayPal retry storms
-
-    return jsonify({'received': True}), 200
-
-
-@app.route('/api/user/subscription', methods=['GET'])
-@require_auth
-def get_user_subscription(user_id):
-    """Return current user's subscription details."""
-    sb = get_supabase()
-    try:
-        res = sb.table('subscriptions').select('*') \
-            .eq('user_id', user_id) \
-            .order('created_at', desc=True) \
-            .limit(1) \
-            .execute()
-    except Exception:
-        return jsonify({'plan': 'free', 'subscription': None})
-
-    if not res.data:
-        return jsonify({
-            'plan': 'free',
-            'subscription': None
-        })
-
-    sub = res.data[0]
-    return jsonify({
-        'plan': sub.get('plan_tier', 'free') if sub.get('status') == 'active' else 'free',
-        'subscription': {
-            'provider': sub.get('provider'),
-            'status': sub.get('status'),
-            'plan_tier': sub.get('plan_tier'),
-            'current_period_end': sub.get('current_period_end'),
-            'cancel_at_period_end': sub.get('cancel_at_period_end', False),
-            'created_at': sub.get('created_at')
-        }
-    })
-
-
 # ── Parse Endpoints ────────────────────────────────────────────────────
 
 @app.route('/api/parse/pdf', methods=['POST'])
@@ -1225,7 +700,7 @@ def parse_pdf(user_id, anon_id):
     allowed, remaining = check_usage(user_id, anon_id, request.remote_addr)
     if not allowed:
         limit = 10 if user_id else ANON_DAILY_LIMIT
-        msg = f'Daily free limit reached ({limit}/{limit}).' + (' Upgrade to Premium for unlimited access.' if user_id else ' Sign up for 10 free uses per day!')
+        msg = f'Daily free limit reached ({limit}/{limit}). Sign up for unlimited use.'
         return jsonify({'error': msg}), 429
 
     if 'file' not in request.files:
@@ -1269,7 +744,7 @@ def parse_word(user_id, anon_id):
     allowed, remaining = check_usage(user_id, anon_id, request.remote_addr)
     if not allowed:
         limit = 10 if user_id else ANON_DAILY_LIMIT
-        msg = f'Daily free limit reached ({limit}/{limit}).' + (' Upgrade to Premium for unlimited access.' if user_id else ' Sign up for 10 free uses per day!')
+        msg = f'Daily free limit reached ({limit}/{limit}). Sign up for unlimited use.'
         return jsonify({'error': msg}), 429
 
     if 'file' not in request.files:
@@ -1318,7 +793,7 @@ def parse_url(user_id, anon_id):
     allowed, remaining = check_usage(user_id, anon_id, request.remote_addr)
     if not allowed:
         limit = 10 if user_id else ANON_DAILY_LIMIT
-        msg = f'Daily free limit reached ({limit}/{limit}).' + (' Upgrade to Premium for unlimited access.' if user_id else ' Sign up for 10 free uses per day!')
+        msg = f'Daily free limit reached ({limit}/{limit}). Sign up for unlimited use.'
         return jsonify({'error': msg}), 429
 
     data = request.get_json(silent=True) or {}
@@ -1461,7 +936,7 @@ def youtube_transcript(user_id, anon_id):
     allowed, remaining = check_usage(user_id, anon_id, request.remote_addr)
     if not allowed:
         limit = 10 if user_id else ANON_DAILY_LIMIT
-        msg = f'Daily free limit reached ({limit}/{limit}).' + (' Upgrade to Premium for unlimited access.' if user_id else ' Sign up for 10 free uses per day!')
+        msg = f'Daily free limit reached ({limit}/{limit}). Sign up for unlimited use.'
         return jsonify({'error': msg}), 429
 
     data = request.get_json(silent=True) or {}
@@ -1649,7 +1124,6 @@ if __name__ == '__main__':
     print(f"  AI Provider : {AI_PROVIDER} ({OPENAI_MODEL})")
     print(f"  AI Base URL : {OPENAI_BASE_URL}")
     print(f"  Supabase URL : {SUPABASE_URL}")
-    print(f"  PayPal  : {'configured' if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else 'NOT configured'} ({PAYPAL_MODE})")
     print("  Server running at http://localhost:5000")
     print("=" * 60)
     app.run(debug=False, host='0.0.0.0', port=int(os.getenv('PORT', 8080)))

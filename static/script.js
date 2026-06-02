@@ -107,188 +107,8 @@ const API = (() => {
         },
         submitFeedback: (content) =>
             fetch(`${BASE}/api/user/feedback`, { method: 'POST', headers: headers(), body: JSON.stringify({ content }) }).then(handle),
-        getSubscription: () => fetch(`${BASE}/api/user/subscription`, { headers: { 'Authorization': `Bearer ${STATE.token}` } }).then(handle),
     };
 })();
-
-// ── PayPal Subscription ──────────────────────────────────────────────────
-const PayPal = {
-    _paypalRendered: false,
-
-    _bindCancelButton(btn) {
-        if (btn.dataset.bound) return; // already bound
-        btn.dataset.bound = '1';
-        btn.addEventListener('click', async () => {
-            if (!confirm('Cancel auto-renewal?\nYou will keep premium access until the current billing period ends.')) return;
-            try {
-                btn.disabled = true;
-                btn.textContent = 'Cancelling...';
-                const r = await PayPal.cancelSubscription();
-                if (r.success) {
-                    const res = await fetch('/api/user/subscription', { headers: { 'Authorization': 'Bearer ' + STATE.token } });
-                    const data = await res.json();
-                    STATE.user.plan = data.plan;
-                    STATE.user.subscription = data.subscription;
-                    localStorage.setItem('summarify_user', JSON.stringify(STATE.user));
-                    updateUI();
-                    loadUsage();
-                    toast(r.message || 'Auto-renewal cancelled', 'info');
-                }
-            } catch (e) {
-                toast(e.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Cancel subscription';
-            }
-        });
-    },
-
-    async createSubscription() {
-        const resp = await fetch('/api/paypal/create-subscription', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${STATE.token}` }
-        });
-        if (!resp.ok) {
-            const err = await resp.json();
-            throw new Error(err.error || 'Failed to create subscription');
-        }
-        return resp.json();
-    },
-
-    async activateSubscription(subscriptionId) {
-        const resp = await fetch('/api/paypal/activate-subscription', {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${STATE.token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ subscription_id: subscriptionId })
-        });
-        if (!resp.ok) {
-            const err = await resp.json();
-            throw new Error(err.error || 'Failed to activate subscription');
-        }
-        return resp.json();
-    },
-
-    async cancelSubscription() {
-        const resp = await fetch('/api/paypal/cancel-subscription', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${STATE.token}` }
-        });
-        if (!resp.ok) {
-            const err = await resp.json();
-            throw new Error(err.error || 'Failed to cancel subscription');
-        }
-        return resp.json();
-    },
-
-    initButton() {
-        const container = document.getElementById('paypal-button-container');
-        const loginHint = document.getElementById('paypal-login-hint');
-        const premiumBadge = document.getElementById('premium-active-badge');
-        const subInfo = document.getElementById('subscription-info');
-        const cancelBtn = document.getElementById('btn-cancel-subscription');
-
-        // Guard: remove any previously-rendered PayPal buttons
-        if (container) {
-            container.innerHTML = '';
-            PayPal._paypalRendered = false;
-        }
-
-        // Determine whether to show the subscribe button
-        const shouldShowSubscribe = STATE.token && STATE.user && STATE.user.plan !== 'premium';
-        const isPremium = STATE.user && STATE.user.plan === 'premium';
-
-        if (!container && !loginHint && !premiumBadge) return;
-
-        if (isPremium) {
-            if (container) container.classList.add('hidden');
-            if (loginHint) loginHint.classList.add('hidden');
-            if (premiumBadge) premiumBadge.classList.remove('hidden');
-            // Fetch subscription details
-            if (subInfo && STATE.token) {
-                API.getSubscription().then(data => {
-                    if (data.subscription && data.subscription.status === 'active') {
-                        const endDate = data.subscription.current_period_end
-                            ? new Date(data.subscription.current_period_end).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })
-                            : '';
-                        const isCancelAtEnd = data.subscription.cancel_at_period_end;
-                        if (subInfo && endDate) {
-                            subInfo.textContent = isCancelAtEnd
-                                ? `Premium until ${endDate} (auto-renewal off)`
-                                : `Next billing: ${endDate}`;
-                            subInfo.classList.remove('hidden');
-                        }
-                        if (cancelBtn && data.subscription.provider === 'paypal' && !isCancelAtEnd) {
-                            cancelBtn.classList.remove('hidden');
-                            PayPal._bindCancelButton(cancelBtn);
-                        } else if (cancelBtn) {
-                            cancelBtn.classList.add('hidden');
-                        }
-                    }
-                }).catch(() => {});
-            }
-            return;
-        }
-
-        // Not logged in - show login hint
-        if (!STATE.token) {
-            if (container) container.classList.add('hidden');
-            if (loginHint) loginHint.classList.remove('hidden');
-            if (premiumBadge) premiumBadge.classList.add('hidden');
-            return;
-        }
-
-        // Logged in but free user - show PayPal button
-        if (container) container.classList.remove('hidden');
-        if (loginHint) loginHint.classList.add('hidden');
-        if (premiumBadge) premiumBadge.classList.add('hidden');
-
-        // Render PayPal button using v2 JS SDK (guard against duplicate renders)
-        if (window.paypal && typeof paypal.Buttons === 'function' && !PayPal._paypalRendered) {
-            PayPal._paypalRendered = true;
-            paypal.Buttons({
-                style: {
-                    layout: 'vertical',
-                    color: 'gold',
-                    shape: 'rect',
-                    label: 'subscribe'
-                },
-                createSubscription: function(data, actions) {
-                    // Server-side creation to set custom_id = user_id
-                    return PayPal.createSubscription()
-                        .then(resp => resp.subscription_id);
-                },
-                onApprove: async function(data) {
-                    try {
-                        toast('Activating your subscription...', 'info');
-                        const result = await PayPal.activateSubscription(data.subscriptionID);
-                        if (result.success) {
-                            STATE.user.plan = 'premium';
-                            localStorage.setItem('summarify_user', JSON.stringify(STATE.user));
-                            updateUI();
-                            loadUsage();
-                            toast('🎉 Welcome to Premium!', 'success');
-                        }
-                    } catch (e) {
-                        toast(e.message || 'Activation failed', 'error');
-                    }
-                },
-                onError: function(err) {
-                    console.error('PayPal error:', err);
-                    toast('Payment failed. Please try again.', 'error');
-                },
-                onCancel: function() {
-                    toast('Payment cancelled. You can upgrade anytime!', 'info');
-                }
-            }).render(container);
-        }
-    }
-};
-
-// Expose to window for PayPal SDK callbacks
-window.PayPal = PayPal;
 
 // ── Toast ───────────────────────────────────────────────────────────────
 let _toastTimer;
@@ -311,8 +131,6 @@ function updateUI() {
     const navUser = document.getElementById('nav-user');
     const userEmail = document.getElementById('user-email');
     const usageBadge = document.getElementById('usage-badge');
-    const planBadge = document.getElementById('plan-badge');
-    const upgradeBtn = document.getElementById('upgrade-btn');
     // Mobile menu user section
     const mobileMenuUser = document.getElementById('mobile-menu-user');
     const mobileUserEmail = document.getElementById('mobile-user-email');
@@ -329,25 +147,11 @@ function updateUI() {
             mobileMenuUser.classList.remove('hidden');
         }
 
-        if (STATE.user.plan === 'premium') {
-            if (planBadge) planBadge.classList.remove('hidden');
-            if (upgradeBtn) upgradeBtn.classList.add('hidden');
-        } else {
-            if (planBadge) planBadge.classList.add('hidden');
-            if (upgradeBtn) upgradeBtn.classList.remove('hidden');
-        }
-        // Render PayPal button (or login hint / premium badge)
-        if (PayPal && typeof PayPal.initButton === 'function') {
-            PayPal.initButton();
-        }
-
         loadUsage();
     } else {
         navAuth.classList.remove('hidden');
         navUser.classList.add('hidden');
         loadUsage(); // Show anonymous usage for logged-out users
-        if (upgradeBtn) upgradeBtn.classList.add('hidden');
-        if (planBadge) planBadge.classList.add('hidden');
         // Hide mobile menu user section
         if (mobileMenuUser) mobileMenuUser.classList.add('hidden');
         if (mobileUserEmail) mobileUserEmail.textContent = '';
@@ -365,8 +169,10 @@ async function loadUsage() {
         // Discard if another loadUsage was triggered while we waited
         if (myId !== _loadUsageId) return;
 
-        if (data.plan === 'premium') {
-            badge.classList.add('hidden');
+        if (data.plan === 'registered') {
+            badge.classList.remove('hidden');
+            badge.textContent = 'Unlimited';
+            badge.className = 'text-xs font-medium px-2 sm:px-3 py-1 rounded-full border truncate max-w-[160px] sm:max-w-[200px] bg-green-50 text-green-700 border-green-200';
         } else if (data.plan === 'anonymous') {
             badge.classList.remove('hidden');
             badge.textContent = `${data.remaining} / ${data.daily_limit} free`;
@@ -740,7 +546,6 @@ document.getElementById('url-input')?.addEventListener('keydown', e => {
 // ── Init ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     
-    // PayPal subscribe button (or login hint / premium badge) will be rendered by updateUI()
     setupDropzone('pdf');
     setupDropzone('word');
     updateUI();
