@@ -576,7 +576,11 @@ const SHARE_HASHTAGS = encodeURIComponent('AI,Summarizer,Productivity');
 function shareOn(platform) {
     const url = encodeURIComponent(window.location.href);
     const title = SHARE_TITLE;
-    const text = encodeURIComponent('Summarize documents, extract key points, and translate with AI — all in seconds. Try it now!');
+    const isZh = window.location.pathname.startsWith('/zh/') || document.documentElement.lang === 'zh-CN';
+    const defaultText = isZh
+        ? '用 AI 一键总结文档、提炼要点、多语言翻译 — Summarify Pro 中文版，免费使用！'
+        : 'Summarize documents, extract key points, and translate with AI — all in seconds. Try it now!';
+    const text = encodeURIComponent(defaultText);
 
     let shareUrl = '';
     switch (platform) {
@@ -595,6 +599,16 @@ function shareOn(platform) {
         case 'whatsapp':
             shareUrl = `https://wa.me/?text=${text}%20${url}`;
             break;
+        case 'weibo':
+            shareUrl = `https://service.weibo.com/share/share.php?url=${url}&title=${title}`;
+            break;
+        case 'qq':
+            shareUrl = `https://connect.qq.com/widget/shareqq/index.html?url=${url}&title=${title}`;
+            break;
+        case 'wechat':
+            // WeChat sharing requires a QR code; fallback to copy link
+            copyShareLink();
+            return;
     }
 
     if (shareUrl) {

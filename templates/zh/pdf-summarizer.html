@@ -1,4 +1,4 @@
-{% set title = "PDF 文档在线总结工具 — Summarify Pro 中文版 | 上传即得 AI 摘要" %}
+﻿{% set title = "PDF 文档在线总结工具 — Summarify Pro 中文版 | 上传即得 AI 摘要" %}
 {% set description = "上传 PDF 文件，AI 自动提取内容并生成摘要、要点提炼和多语言翻译。无需注册，免费使用，每日 10 次。" %}
 {% set canonical = "https://www.summarifypro.com/zh/pdf-summarizer/" %}
 <!DOCTYPE html>
@@ -21,7 +21,7 @@
 <!-- ═══════ 上传区 ═══════ -->
 <section id="upload-section" class="max-w-3xl mx-auto px-4 pb-6">
     <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
-        <div id="pdf-dropzone" class="dropzone border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-brand-400 hover:bg-brand-50/30 transition-all">
+        <div id="pdf-dropzone" class="dropzone border-2 border-dashed border-gray-200 rounded-xl p-10 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all">
             <div class="mx-auto w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mb-4">
                 <svg class="w-7 h-7 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             </div>
@@ -72,7 +72,7 @@
                     <button onclick="runAI('translate')" class="ai-btn flex items-center gap-1.5 px-4 py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 transition-colors shadow-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg> 翻译为
                     </button>
-                    <select id="target-lang" class="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white text-gray-700 outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer flex-1 sm:flex-initial">
+                    <select id="target-lang" class="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white text-gray-700 outline-none focus:ring-2 focus:ring-violet-500 flex-1 sm:flex-initial">
                         <option value="Chinese">🇨🇳 中文</option>
                         <option value="English">🇺🇸 英文</option>
                         <option value="Spanish">🇪🇸 西班牙语</option>
@@ -105,6 +105,67 @@
         <div id="result-loading" class="hidden flex items-center justify-center gap-3 py-8 text-brand-600">
             <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
             <span class="text-sm font-medium">AI 正在思考...</span>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════ FAQ ═══════════════════════ -->
+<section class="py-16 px-4 bg-white">
+    <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-10">
+            <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-4 py-1.5 rounded-full">常见问题</span>
+            <h2 class="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900">关于 PDF AI 总结</h2>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">
+
+            <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 hover:border-brand-200 hover:shadow-sm transition-all">
+                <div class="font-semibold text-gray-800 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 text-sm">📄</span>
+                    PDF 文件有大小限制吗？
+                </div>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">支持最大 16 MB 的 PDF 文件。文件过大的话，建议先用工具压缩或拆分后再上传。</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 hover:border-brand-200 hover:shadow-sm transition-all">
+                <div class="font-semibold text-gray-800 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0 text-sm">🔍</span>
+                    支持扫描件/图片型 PDF 吗？
+                </div>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">目前支持文字型 PDF（即可以用鼠标选中文字的 PDF）。扫描件/图片型 PDF 需要先通过 OCR 工具转换为文字版后再上传。</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 hover:border-brand-200 hover:shadow-sm transition-all">
+                <div class="font-semibold text-gray-800 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0 text-sm">🎯</span>
+                    生成的摘要准确吗？
+                </div>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">AI 会自动抓取文档核心内容并生成结构化摘要。对于标准格式的论文、报告、合同等文档效果很好。也支持进一步提炼关键要点，方便快速浏览。</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 hover:border-brand-200 hover:shadow-sm transition-all">
+                <div class="font-semibold text-gray-800 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0 text-sm">💳</span>
+                    需要注册和付费吗？
+                </div>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">完全免费。无需注册也可以每天使用 10 次。注册免费账号后无限制使用，不需要任何支付信息。</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 hover:border-brand-200 hover:shadow-sm transition-all">
+                <div class="font-semibold text-gray-800 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center flex-shrink-0 text-sm">🌐</span>
+                    支持翻译成哪些语言？
+                </div>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">支持翻译为英文、西班牙语、德语、日语和中文，点击「翻译为」按钮后选择目标语言即可。</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 hover:border-brand-200 hover:shadow-sm transition-all">
+                <div class="font-semibold text-gray-800 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 text-sm">🔒</span>
+                    上传的文件安全吗？
+                </div>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">文件仅在上传过程中临时处理以提取文本，不会永久存储在服务器上。提取完成后即被清除。</p>
+            </div>
+
         </div>
     </div>
 </section>

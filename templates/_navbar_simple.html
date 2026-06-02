@@ -12,16 +12,18 @@
             <!-- Center: Nav Links (desktop only) -->
             <div class="hidden sm:flex items-center gap-1">
                 <a href="/" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active == 'summarize' %}text-brand-700 bg-brand-50{% else %}text-gray-600 hover:text-brand-700 hover:bg-brand-50{% endif %}">Summarize</a>
-                <a href="/youtube-summarizer" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 {% if nav_active == 'youtube' %}text-red-600 bg-red-50{% else %}text-gray-600 hover:text-red-600 hover:bg-red-50{% endif %}">YouTube</a>
-          <a href="/blog/" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 {% if active == 'blog' %}text-brand-700 bg-brand-50{% else %}text-gray-600 hover:text-brand-700 hover:bg-brand-50{% endif %}">Blog</a>
+                <a href="/youtube-summarizer" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 {% if active == 'youtube' %}text-red-600 bg-red-50{% else %}text-gray-600 hover:text-red-600 hover:bg-red-50{% endif %}">YouTube</a>
+                <a href="/blog/" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active == 'blog' %}text-brand-700 bg-brand-50{% else %}text-gray-600 hover:text-brand-700 hover:bg-brand-50{% endif %}">Blog</a>
             </div>
 
-            <!-- Right -->
-            <div class="flex items-center gap-3 shrink-0">
-                <a href="/" class="hidden sm:flex text-sm text-gray-500 hover:text-brand-600 transition-colors items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    Back to Home
-                </a>
+            <!-- Right: Language switcher -->
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <!-- Language Switcher: pill on desktop, text on mobile -->
+                <div class="hidden sm:flex items-center gap-1 border border-gray-200 rounded-lg p-0.5">
+                    <span class="text-xs font-semibold px-2 py-1 rounded-md bg-brand-600 text-white">EN</span>
+                    <a href="/zh/" class="text-xs font-medium px-2 py-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">中文</a>
+                </div>
+                <a href="/zh/" class="sm:hidden text-xs font-medium text-gray-500 hover:text-brand-600 transition-colors">中文</a>
                 <!-- Mobile Hamburger -->
                 <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="sm:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Toggle menu">
                     <svg id="hamburger-icon" class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -32,8 +34,9 @@
 
         <!-- Mobile Menu Dropdown -->
         <div id="mobile-menu" class="hidden sm:hidden pb-4 space-y-1 animate-fade-in">
-            <a href="/" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:text-brand-700 hover:bg-brand-50 transition-colors">📄 Summarize</a>
-            <a href="/youtube-summarizer" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors">📺 YouTube Summarizer</a>
+            <a href="/" class="block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if active == 'summarize' %}text-brand-700 bg-brand-50 font-semibold{% else %}text-gray-700 hover:text-brand-700 hover:bg-brand-50{% endif %}">📄 Summarize</a>
+            <a href="/youtube-summarizer" class="block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if active == 'youtube' %}text-red-600 bg-red-50 font-semibold{% else %}text-gray-700 hover:text-red-600 hover:bg-red-50{% endif %}">📺 YouTube Summarizer</a>
+            <a href="/blog/" class="block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if active == 'blog' %}text-brand-700 bg-brand-50 font-semibold{% else %}text-gray-700 hover:text-brand-700 hover:bg-brand-50{% endif %}">📝 Blog</a>
         </div>
     </div>
 </nav>

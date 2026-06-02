@@ -212,30 +212,70 @@
     </div>
 </section>
 
-<!-- ═══════════════════════ PRICING ═══════════════════════ -->
-<section id="pricing" class="py-20 px-4 bg-gray-50">
-    <div class="max-w-5xl mx-auto text-center mb-14">
-        <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-4 py-1.5 rounded-full">Pricing</span>
-        <h2 class="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900">Free for everyone</h2>
-        <p class="mt-3 text-gray-500 max-w-xl mx-auto">No credit card. No limits after sign-up.</p>
-    </div>
-    <div class="max-w-lg mx-auto">
-        <!-- Free -->
-        <div class="bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-lg transition-shadow">
-            <h3 class="text-xl font-bold text-gray-900">Free</h3>
-            <p class="text-sm text-gray-500 mt-1">Just sign up for unlimited access</p>
-            <div class="mt-6 mb-6">
-                <span class="text-4xl font-extrabold text-gray-900">$0</span>
-                <span class="text-gray-400 text-sm">forever</span>
-            </div>
-            <ul class="space-y-3 text-sm text-gray-600">
-                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> <strong>Unlimited</strong> usage with free account</li>
-                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> 10 extractions/day without sign-up</li>
-                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> PDF, Word &amp; URL parsing</li>
-                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> AI summary &amp; key points</li>
-                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Multi-language translation</li>
-            </ul>
-            <button onclick="document.getElementById('upload-section').scrollIntoView({behavior:'smooth'})" class="mt-8 w-full py-3 rounded-xl bg-brand-600 text-white font-semibold text-sm hover:bg-brand-700 transition-colors">Get Started</button>
+<!-- ═══════════════════════ FAQ ═══════════════════════ -->
+<section class="py-16 px-4 bg-gray-50">
+    <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-10">
+            <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-4 py-1.5 rounded-full">FAQ</span>
+            <h2 class="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900">Frequently asked questions</h2>
+            <p class="mt-2 text-gray-400 text-sm">Everything you need to know about Summarify Pro</p>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">
+
+            <details class="bg-white rounded-xl border border-gray-100 p-5 group cursor-pointer hover:border-brand-200 hover:shadow-sm transition-all">
+                <summary class="font-semibold text-gray-800 select-none list-none flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0 text-sm">💰</span>
+                    Is Summarify Pro really free?
+                    <svg class="w-4 h-4 text-gray-300 ml-auto group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">Yes — 100% free. No credit card, no trial period, no hidden fees. Sign up and get unlimited usage. Even without signing up, you can use all features 10 times per day.</p>
+            </details>
+
+            <details class="bg-white rounded-xl border border-gray-100 p-5 group cursor-pointer hover:border-brand-200 hover:shadow-sm transition-all">
+                <summary class="font-semibold text-gray-800 select-none list-none flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 text-sm">🔄</span>
+                    Signed-up vs anonymous use?
+                    <svg class="w-4 h-4 text-gray-300 ml-auto group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">Without an account: 10 free extractions/day across all tools. With a free account: unlimited. That's the only difference.</p>
+            </details>
+
+            <details class="bg-white rounded-xl border border-gray-100 p-5 group cursor-pointer hover:border-brand-200 hover:shadow-sm transition-all">
+                <summary class="font-semibold text-gray-800 select-none list-none flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0 text-sm">💳</span>
+                    Need a credit card to sign up?
+                    <svg class="w-4 h-4 text-gray-300 ml-auto group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">No. Just an email and password. We don't even have a payment system — there's nothing to charge.</p>
+            </details>
+
+            <details class="bg-white rounded-xl border border-gray-100 p-5 group cursor-pointer hover:border-brand-200 hover:shadow-sm transition-all">
+                <summary class="font-semibold text-gray-800 select-none list-none flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0 text-sm">📄</span>
+                    What file types are supported?
+                    <svg class="w-4 h-4 text-gray-300 ml-auto group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">PDF (up to 16 MB), Word (.docx), any webpage URL, and YouTube videos. You can also paste text directly into the AI Summarize tool.</p>
+            </details>
+
+            <details class="bg-white rounded-xl border border-gray-100 p-5 group cursor-pointer hover:border-brand-200 hover:shadow-sm transition-all">
+                <summary class="font-semibold text-gray-800 select-none list-none flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center flex-shrink-0 text-sm">🔒</span>
+                    What happens to my files?
+                    <svg class="w-4 h-4 text-gray-300 ml-auto group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">Files are processed temporarily and not stored permanently. See our <a href="/privacy" class="text-brand-600 hover:underline font-medium">Privacy Policy</a> for details.</p>
+            </details>
+
+            <details class="bg-white rounded-xl border border-gray-100 p-5 group cursor-pointer hover:border-brand-200 hover:shadow-sm transition-all">
+                <summary class="font-semibold text-gray-800 select-none list-none flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 text-sm">🤖</span>
+                    Different from ChatGPT?
+                    <svg class="w-4 h-4 text-gray-300 ml-auto group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <p class="mt-3 ml-11 text-sm text-gray-500 leading-relaxed">Purpose-built for documents. Upload a PDF or paste a URL and text is auto-extracted — no manual copy-paste. Also supports batch key-points and multi-language translation in one click.</p>
+            </details>
+
         </div>
     </div>
 </section>
