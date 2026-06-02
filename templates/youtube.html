@@ -255,7 +255,7 @@ async function handleRegister(e) {
         STATE.token = data.token; STATE.user = data.user;
         localStorage.setItem('summarify_token', data.token);
         localStorage.setItem('summarify_user', JSON.stringify(data.user));
-        updateUI(); hideModal('register'); toast('Account created! You now have 10 free uses per day.', 'success');
+        updateUI(); hideModal('register'); toast('Account created! You now have unlimited access.', 'success');
     } catch (e) { toast(e.message, 'error'); }
     finally { btn.disabled = false; btn.textContent = 'Create account'; }
 }
