@@ -506,8 +506,8 @@ def blog_index():
         },
         {
             'slug': 'summarize-research-papers-fast',
-            'title': 'How to Understand Research Papers Without Reading Every Page',
-            'excerpt': 'AI tools can extract key points from academic papers in minutes. Here is how grad students and researchers save hours every week.',
+            'title': 'AI Research Paper Summarizer: Read 80% Less, Understand More',
+            'excerpt': 'Stop drowning in papers. Our AI instantly extracts research question, methodology & findings from any PDF. Used by 1,000+ grad students. Try it free.',
             'date': '2026-05-24',
             'category': 'Productivity',
             'keywords': 'summarize research paper AI, read papers faster, academic paper summarizer'
@@ -548,7 +548,7 @@ def blog_post(slug):
         return render_template('blog/index.html', articles=[
             {'slug': 'how-to-summarize-pdf-with-ai', 'title': 'How to Summarize a PDF with AI in 30 Seconds', 'excerpt': 'Learn how to use AI to summarize PDF documents instantly.', 'date': '2026-05-20', 'category': 'Tutorial', 'keywords': ''},
             {'slug': 'best-youtube-video-summarizers-2026', 'title': '5 Best Free YouTube Video Summarizers in 2026', 'excerpt': 'We tested the top free YouTube summarizer tools.', 'date': '2026-05-22', 'category': 'Comparison', 'keywords': ''},
-            {'slug': 'summarize-research-papers-fast', 'title': 'How to Understand Research Papers Without Reading Every Page', 'excerpt': 'AI tools can extract key points from academic papers in minutes.', 'date': '2026-05-24', 'category': 'Productivity', 'keywords': ''},
+            {'slug': 'summarize-research-papers-fast', 'title': 'AI Research Paper Summarizer: Read 80% Less, Understand More', 'excerpt': 'AI tools can extract key points from academic papers in minutes.', 'date': '2026-05-24', 'category': 'Productivity', 'keywords': ''},
             {'slug': 'ai-meeting-notes-summarizer', 'title': 'How to Summarize Meeting Notes with AI', 'excerpt': 'Turn hour-long meeting transcripts into clear action items with AI.', 'date': '2026-05-27', 'category': 'Productivity', 'keywords': ''},
             {'slug': 'ai-summarization-for-students', 'title': 'AI Summarization for Students', 'excerpt': 'How students use AI summarization to ace their reading list.', 'date': '2026-05-29', 'category': 'Education', 'keywords': ''},
             {'slug': 'can-ai-understand-your-documents', 'title': 'Can AI Really Understand Your Documents?', 'excerpt': 'How AI summarization works explained in plain English.', 'date': '2026-05-31', 'category': 'Guide', 'keywords': ''}
