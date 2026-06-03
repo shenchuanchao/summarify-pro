@@ -1052,7 +1052,7 @@ def ai_generate(user_id, anon_id):
         'summarize': (
             "You are a professional document analyst. Please provide a **concise, well-structured summary** "
             "of the following document. IMPORTANT: You MUST respond in the **same language** as the document. "
-            "The summary MUST NOT exceed 500 characters (including spaces and punctuation). "
+            "The summary MUST NOT exceed 1000 characters (including spaces and punctuation). "
             "Be concise and professional.\n\nDocument:\n{text}"
         ),
         'keypoints': (
