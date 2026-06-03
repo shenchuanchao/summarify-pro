@@ -21,7 +21,8 @@
                 <span id="usage-badge" class="hidden text-xs font-medium px-2 sm:px-3 py-1 rounded-full border truncate max-w-[160px] sm:max-w-[200px]"></span>
                 <!-- 登录按钮（未登录） -->
                 <div id="nav-auth" class="flex items-center gap-2 sm:gap-3">
-                    <a href="/login" class="hidden sm:block text-sm font-medium text-gray-600 hover:text-brand-600 transition-colors px-2 sm:px-3 py-2">登录</a>
+                    <button onclick="showModal('login')" class="text-sm font-medium text-gray-600 hover:text-brand-600 transition-colors px-2 sm:px-3 py-2 bg-transparent border-none cursor-pointer">登录</button>
+                    <a href="/zh/register" class="hidden sm:inline-flex text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors">免费注册</a>
                 </div>
                 <!-- 用户信息（已登录） -->
                 <div id="nav-user" class="hidden items-center gap-2 sm:gap-4">
@@ -50,8 +51,8 @@
             <a href="/zh/word-summarizer" class="block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if active == 'word' %}text-brand-700 bg-brand-50 font-semibold{% else %}text-gray-700 hover:text-brand-700 hover:bg-brand-50{% endif %}">📝 Word 总结</a>
             <a href="/zh/url-summarizer" class="block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if active == 'url' %}text-brand-700 bg-brand-50 font-semibold{% else %}text-gray-700 hover:text-brand-700 hover:bg-brand-50{% endif %}">🌐 网页解析</a>
             <div class="border-t border-gray-100 pt-2 mt-2">
-                <a href="/login" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:text-brand-700 hover:bg-brand-50 transition-colors">🔑 登录</a>
-                <a href="/register" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:text-brand-700 hover:bg-brand-50 transition-colors">✨ 免费注册</a>
+                <button onclick="showModal('login');closeMobileMenu();" class="w-full text-left block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:text-brand-700 hover:bg-brand-50 transition-colors bg-transparent border-none cursor-pointer">🔑 登录</button>
+                <a href="/zh/register" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:text-brand-700 hover:bg-brand-50 transition-colors">✨ 免费注册</a>
             </div>
         </div>
     </div>

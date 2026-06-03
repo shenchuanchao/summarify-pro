@@ -152,7 +152,11 @@ async function handleTextAI(action) {
     } catch (e) {
         document.getElementById('text-loading').classList.add('hidden');
         document.getElementById('text-placeholder').classList.remove('hidden');
-        alert('❌ ' + (e.message || '请求失败'));
+        if (e.message && (e.message.includes('免费') || e.message.includes('limit') || e.message.includes('Sign up') || e.message.includes('注册'))) {
+            promptLogin('免费次数已用完（10/10），登录后即可无限使用');
+        } else {
+            alert('❌ ' + (e.message || '请求失败'));
+        }
     }
 }
 
@@ -289,6 +293,7 @@ function downloadTextResult() {
     </div>
 </section>
 
+{% include 'zh/_modals.html' %}
 {% include 'zh/_footer.html' %}
 <script src="/script.js"></script>
 <script type="application/ld+json">

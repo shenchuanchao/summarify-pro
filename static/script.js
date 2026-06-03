@@ -263,12 +263,25 @@ function hideModal(type) {
     // clear forms
     const form = document.getElementById(`${type}-form`);
     if (form) form.reset();
+    // Clear login prompt message if exists
+    const msgEl = document.getElementById('modal-login-msg');
+    if (msgEl) msgEl.classList.add('hidden');
 }
 function switchModal(to) {
     hideModal('login');
     hideModal('register');
     hideModal('feedback');
     showModal(to);
+}
+
+// Show login modal with a contextual prompt message (used on quota exhausted)
+function promptLogin(message) {
+    const msgEl = document.getElementById('modal-login-msg');
+    if (msgEl && message) {
+        msgEl.textContent = message;
+        msgEl.classList.remove('hidden');
+    }
+    showModal('login');
 }
 
 async function handleFeedback(event) {
@@ -392,8 +405,8 @@ async function parseURL() {
         toast('URL content extracted!', 'success');
     } catch (e) {
         toast(e.message, 'error');
-        if (!STATE.token && e.message && e.message.includes('Sign up')) {
-            setTimeout(() => showModal('login'), 2500);
+        if (!STATE.token && e.message && (e.message.includes('Sign up') || e.message.includes('limit') || e.message.includes('注册') || e.message.includes('登录'))) {
+            setTimeout(() => promptLogin(e.message), 2000);
         }
     } finally {
         showParseLoading(false);
@@ -420,8 +433,8 @@ async function handleParse() {
         toast('Text extracted successfully!', 'success');
     } catch (e) {
         toast(e.message, 'error');
-        if (!STATE.token && e.message && e.message.includes('Sign up')) {
-            setTimeout(() => showModal('login'), 2500);
+        if (!STATE.token && e.message && (e.message.includes('Sign up') || e.message.includes('limit') || e.message.includes('注册') || e.message.includes('登录'))) {
+            setTimeout(() => promptLogin(e.message), 2000);
         }
     } finally {
         showParseLoading(false);

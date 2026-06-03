@@ -467,6 +467,14 @@ def login_page():
 def register_page():
     return render_template('register.html')
 
+@app.route('/zh/login')
+def zh_login_page():
+    return render_template('zh/login.html')
+
+@app.route('/zh/register')
+def zh_register_page():
+    return render_template('zh/register.html')
+
 @app.route('/privacy')
 def privacy_page():
     return render_template('privacy.html')
