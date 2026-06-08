@@ -82,6 +82,18 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.summarifypro.com/blog/how-to-read-academic-papers</loc>
+    <lastmod>2026-06-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.summarifypro.com/blog/ai-summarizer-vs-chatgpt</loc>
+    <lastmod>2026-06-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.summarifypro.com/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

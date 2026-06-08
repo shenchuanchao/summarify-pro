@@ -543,6 +543,22 @@ def blog_index():
             'date': '2026-05-31',
             'category': 'Guide',
             'keywords': 'how AI summarization works, AI document understanding, extractive vs abstractive summarization'
+        },
+        {
+            'slug': 'how-to-read-academic-papers',
+            'title': 'How to Read Academic Papers Faster with AI — A Complete Guide',
+            'excerpt': 'Learn proven techniques to read academic papers 3x faster using AI summarization. From skimming strategies to AI tools, this guide covers everything researchers need.',
+            'date': '2026-06-02',
+            'category': 'Guide',
+            'keywords': 'read academic papers faster, AI research paper summarizer, how to read papers'
+        },
+        {
+            'slug': 'ai-summarizer-vs-chatgpt',
+            'title': 'AI Summarizer vs ChatGPT: Which Gives Better Document Summaries?',
+            'excerpt': 'We compared dedicated AI summarizers against ChatGPT for summarizing PDFs, research papers, and meeting notes. See which tool wins for accuracy, speed, and convenience.',
+            'date': '2026-06-05',
+            'category': 'Comparison',
+            'keywords': 'AI summarizer vs ChatGPT, ChatGPT document summary, best AI summarizer tool'
         }
     ]
     return render_template('blog/index.html', articles=articles)
@@ -559,7 +575,9 @@ def blog_post(slug):
             {'slug': 'summarize-research-papers-fast', 'title': 'AI Research Paper Summarizer: Read 80% Less, Understand More', 'excerpt': 'AI tools can extract key points from academic papers in minutes.', 'date': '2026-05-24', 'category': 'Productivity', 'keywords': ''},
             {'slug': 'ai-meeting-notes-summarizer', 'title': 'How to Summarize Meeting Notes with AI', 'excerpt': 'Turn hour-long meeting transcripts into clear action items with AI.', 'date': '2026-05-27', 'category': 'Productivity', 'keywords': ''},
             {'slug': 'ai-summarization-for-students', 'title': 'AI Summarization for Students', 'excerpt': 'How students use AI summarization to ace their reading list.', 'date': '2026-05-29', 'category': 'Education', 'keywords': ''},
-            {'slug': 'can-ai-understand-your-documents', 'title': 'Can AI Really Understand Your Documents?', 'excerpt': 'How AI summarization works explained in plain English.', 'date': '2026-05-31', 'category': 'Guide', 'keywords': ''}
+            {'slug': 'can-ai-understand-your-documents', 'title': 'Can AI Really Understand Your Documents?', 'excerpt': 'How AI summarization works explained in plain English.', 'date': '2026-05-31', 'category': 'Guide', 'keywords': ''},
+            {'slug': 'how-to-read-academic-papers', 'title': 'How to Read Academic Papers Faster with AI', 'excerpt': 'Learn proven techniques to read academic papers 3x faster using AI summarization.', 'date': '2026-06-02', 'category': 'Guide', 'keywords': ''},
+            {'slug': 'ai-summarizer-vs-chatgpt', 'title': 'AI Summarizer vs ChatGPT', 'excerpt': 'We compared dedicated AI summarizers against ChatGPT for summarizing PDFs, research papers, and meeting notes.', 'date': '2026-06-05', 'category': 'Comparison', 'keywords': ''}
         ]), 404
 
 # ── Chinese (/zh/) Pages ──────────────────────────────────────────────
