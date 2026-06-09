@@ -559,6 +559,22 @@ def blog_index():
             'date': '2026-06-05',
             'category': 'Comparison',
             'keywords': 'AI summarizer vs ChatGPT, ChatGPT document summary, best AI summarizer tool'
+        },
+        {
+            'slug': 'ai-note-taking-guide-2026',
+            'title': 'The Ultimate AI Note-Taking Guide for 2026 — Work Smarter, Not Harder',
+            'excerpt': 'Master AI-powered note-taking in 2026. From meeting transcripts to lecture notes, learn how to capture, summarize, and organize information 10x faster with AI tools.',
+            'date': '2026-06-07',
+            'category': 'Trending',
+            'keywords': 'AI note-taking guide 2026, AI meeting notes, best AI note-taking workflow'
+        },
+        {
+            'slug': 'ai-multilingual-document-summarization',
+            'title': 'How to Summarize Documents in Any Language with AI — The 2026 Guide',
+            'excerpt': 'Break language barriers with AI multilingual document summarization. Learn how global teams summarize PDFs, reports, and research in 5+ languages with near-native accuracy.',
+            'date': '2026-06-08',
+            'category': 'Trending',
+            'keywords': 'multilingual AI summarization, summarize foreign language documents, cross-lingual document summary'
         }
     ]
     return render_template('blog/index.html', articles=articles)
@@ -577,7 +593,9 @@ def blog_post(slug):
             {'slug': 'ai-summarization-for-students', 'title': 'AI Summarization for Students', 'excerpt': 'How students use AI summarization to ace their reading list.', 'date': '2026-05-29', 'category': 'Education', 'keywords': ''},
             {'slug': 'can-ai-understand-your-documents', 'title': 'Can AI Really Understand Your Documents?', 'excerpt': 'How AI summarization works explained in plain English.', 'date': '2026-05-31', 'category': 'Guide', 'keywords': ''},
             {'slug': 'how-to-read-academic-papers', 'title': 'How to Read Academic Papers Faster with AI', 'excerpt': 'Learn proven techniques to read academic papers 3x faster using AI summarization.', 'date': '2026-06-02', 'category': 'Guide', 'keywords': ''},
-            {'slug': 'ai-summarizer-vs-chatgpt', 'title': 'AI Summarizer vs ChatGPT', 'excerpt': 'We compared dedicated AI summarizers against ChatGPT for summarizing PDFs, research papers, and meeting notes.', 'date': '2026-06-05', 'category': 'Comparison', 'keywords': ''}
+            {'slug': 'ai-summarizer-vs-chatgpt', 'title': 'AI Summarizer vs ChatGPT', 'excerpt': 'We compared dedicated AI summarizers against ChatGPT for summarizing PDFs, research papers, and meeting notes.', 'date': '2026-06-05', 'category': 'Comparison', 'keywords': ''},
+            {'slug': 'ai-note-taking-guide-2026', 'title': 'The Ultimate AI Note-Taking Guide for 2026', 'excerpt': 'Master AI-powered note-taking in 2026 with tools and workflows that save 6+ hours per week.', 'date': '2026-06-07', 'category': 'Trending', 'keywords': ''},
+            {'slug': 'ai-multilingual-document-summarization', 'title': 'How to Summarize Documents in Any Language with AI', 'excerpt': 'Break language barriers with AI multilingual document summarization for global teams.', 'date': '2026-06-08', 'category': 'Trending', 'keywords': ''}
         ]), 404
 
 # ── Chinese (/zh/) Pages ──────────────────────────────────────────────
