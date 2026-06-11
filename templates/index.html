@@ -1,12 +1,42 @@
 {% set title = "Free AI Summarizer: Summarize Any Text Instantly (10 Free/Day) — Summarify Pro" %}
 {% set description = "Free AI summarizer — summarize PDF, Word, URLs & YouTube videos instantly. Get AI summaries, key points & translations. No sign-up required." %}
 {% set canonical = "https://www.summarifypro.com/" %}
+{% set hreflang_zh = "https://www.summarifypro.com/zh/" %}
 <!DOCTYPE html>
 <html lang="en">
 {% include '_head.html' %}
 {% set nav_active = 'summarize' %}
 <body class="bg-gray-50 text-gray-900 antialiased">
 {% include '_navbar.html' %}
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Summarify Pro",
+  "description": "Free AI summarizer that summarizes PDF, Word documents, URLs and YouTube videos instantly. Get AI summaries, key points, and translations in 5 languages.",
+  "applicationCategory": "EducationApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "ratingCount": "127"
+  },
+  "featureList": [
+    "PDF Summarization",
+    "Word Document Summarization",
+    "URL Summarization",
+    "YouTube Video Summarization",
+    "Multi-language Translation (EN, ZH, JA, KO, ES)",
+    "Key Points Extraction"
+  ]
+}
+</script>
 
 <!-- ═══════════════════════ HERO ═══════════════════════ -->
 <section class="pt-32 pb-20 px-4">

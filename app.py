@@ -514,7 +514,7 @@ def blog_index():
         },
         {
             'slug': 'summarize-research-papers-fast',
-            'title': 'AI Research Paper Summarizer: Read 80% Less, Understand More',
+            'title': 'How to Summarize a Research Paper in 3 Minutes [Free AI Tool]',
             'excerpt': 'Stop drowning in papers. Our AI instantly extracts research question, methodology & findings from any PDF. Used by 1,000+ grad students. Try it free.',
             'date': '2026-05-24',
             'category': 'Productivity',
@@ -575,6 +575,22 @@ def blog_index():
             'date': '2026-06-08',
             'category': 'Trending',
             'keywords': 'multilingual AI summarization, summarize foreign language documents, cross-lingual document summary'
+        },
+        {
+            'slug': 'best-free-ai-pdf-summarizers-2026',
+            'title': '5 Best Free AI PDF Summarizers in 2026 (Tested & Compared)',
+            'excerpt': 'We tested 5 free AI PDF summarizers on research papers, contracts, and eBooks. See which tool delivers the most accurate summaries without paying a cent.',
+            'date': '2026-06-11',
+            'category': 'Comparison',
+            'keywords': 'best free PDF summarizer AI, AI PDF summary tool free, top PDF summarizers 2026'
+        },
+        {
+            'slug': 'how-to-summarize-youtube-video-to-text',
+            'title': 'How to Summarize a YouTube Video to Text — Step by Step Guide 2026',
+            'excerpt': 'Learn how to turn any YouTube video into a text summary in 30 seconds. Step-by-step guide for lectures, podcasts, and tutorials. Free, no sign-up needed.',
+            'date': '2026-06-11',
+            'category': 'Tutorial',
+            'keywords': 'summarize YouTube video to text, YouTube to text summary free, YouTube video summary AI'
         }
     ]
     return render_template('blog/index.html', articles=articles)
@@ -588,14 +604,16 @@ def blog_post(slug):
         return render_template('blog/index.html', articles=[
             {'slug': 'how-to-summarize-pdf-with-ai', 'title': 'How to Summarize a PDF with AI in 30 Seconds', 'excerpt': 'Learn how to use AI to summarize PDF documents instantly.', 'date': '2026-05-20', 'category': 'Tutorial', 'keywords': ''},
             {'slug': 'best-youtube-video-summarizers-2026', 'title': '5 Best Free YouTube Video Summarizers in 2026', 'excerpt': 'We tested the top free YouTube summarizer tools.', 'date': '2026-05-22', 'category': 'Comparison', 'keywords': ''},
-            {'slug': 'summarize-research-papers-fast', 'title': 'AI Research Paper Summarizer: Read 80% Less, Understand More', 'excerpt': 'AI tools can extract key points from academic papers in minutes.', 'date': '2026-05-24', 'category': 'Productivity', 'keywords': ''},
+            {'slug': 'summarize-research-papers-fast', 'title': 'How to Summarize a Research Paper in 3 Minutes [Free AI Tool]', 'excerpt': 'AI tools can extract key points from academic papers in minutes.', 'date': '2026-05-24', 'category': 'Productivity', 'keywords': ''},
             {'slug': 'ai-meeting-notes-summarizer', 'title': 'How to Summarize Meeting Notes with AI', 'excerpt': 'Turn hour-long meeting transcripts into clear action items with AI.', 'date': '2026-05-27', 'category': 'Productivity', 'keywords': ''},
             {'slug': 'ai-summarization-for-students', 'title': 'AI Summarization for Students', 'excerpt': 'How students use AI summarization to ace their reading list.', 'date': '2026-05-29', 'category': 'Education', 'keywords': ''},
             {'slug': 'can-ai-understand-your-documents', 'title': 'Can AI Really Understand Your Documents?', 'excerpt': 'How AI summarization works explained in plain English.', 'date': '2026-05-31', 'category': 'Guide', 'keywords': ''},
             {'slug': 'how-to-read-academic-papers', 'title': 'How to Read Academic Papers Faster with AI', 'excerpt': 'Learn proven techniques to read academic papers 3x faster using AI summarization.', 'date': '2026-06-02', 'category': 'Guide', 'keywords': ''},
             {'slug': 'ai-summarizer-vs-chatgpt', 'title': 'AI Summarizer vs ChatGPT', 'excerpt': 'We compared dedicated AI summarizers against ChatGPT for summarizing PDFs, research papers, and meeting notes.', 'date': '2026-06-05', 'category': 'Comparison', 'keywords': ''},
             {'slug': 'ai-note-taking-guide-2026', 'title': 'The Ultimate AI Note-Taking Guide for 2026', 'excerpt': 'Master AI-powered note-taking in 2026 with tools and workflows that save 6+ hours per week.', 'date': '2026-06-07', 'category': 'Trending', 'keywords': ''},
-            {'slug': 'ai-multilingual-document-summarization', 'title': 'How to Summarize Documents in Any Language with AI', 'excerpt': 'Break language barriers with AI multilingual document summarization for global teams.', 'date': '2026-06-08', 'category': 'Trending', 'keywords': ''}
+            {'slug': 'ai-multilingual-document-summarization', 'title': 'How to Summarize Documents in Any Language with AI', 'excerpt': 'Break language barriers with AI multilingual document summarization for global teams.', 'date': '2026-06-08', 'category': 'Trending', 'keywords': ''},
+            {'slug': 'best-free-ai-pdf-summarizers-2026', 'title': '5 Best Free AI PDF Summarizers in 2026', 'excerpt': 'We tested 5 free AI PDF summarizers on research papers, contracts, and eBooks.', 'date': '2026-06-11', 'category': 'Comparison', 'keywords': ''},
+            {'slug': 'how-to-summarize-youtube-video-to-text', 'title': 'How to Summarize a YouTube Video to Text', 'excerpt': 'Learn how to turn any YouTube video into a text summary in 30 seconds.', 'date': '2026-06-11', 'category': 'Tutorial', 'keywords': ''}
         ]), 404
 
 # ── Chinese (/zh/) Pages ──────────────────────────────────────────────
