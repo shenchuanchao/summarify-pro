@@ -577,20 +577,20 @@ def blog_index():
             'keywords': 'multilingual AI summarization, summarize foreign language documents, cross-lingual document summary'
         },
         {
-            'slug': 'best-free-ai-pdf-summarizers-2026',
-            'title': '5 Best Free AI PDF Summarizers in 2026 (Tested & Compared)',
-            'excerpt': 'We tested 5 free AI PDF summarizers on research papers, contracts, and eBooks. See which tool delivers the most accurate summaries without paying a cent.',
-            'date': '2026-06-11',
-            'category': 'Comparison',
-            'keywords': 'best free PDF summarizer AI, AI PDF summary tool free, top PDF summarizers 2026'
+            'slug': 'how-to-summarize-article-without-plagiarizing',
+            'title': 'How to Summarize an Article Without Plagiarizing: 3 Safe Techniques',
+            'excerpt': 'Learn 3 proven techniques to summarize articles without plagiarizing — citation-first, synthesis, and AI-assisted. Includes a step-by-step guide and plagiarism-prevention checklist.',
+            'date': '2026-06-10',
+            'category': 'Writing',
+            'keywords': 'how to summarize an article without plagiarizing, summarize without plagiarism, avoid plagiarism in summary, paraphrase vs plagiarize'
         },
         {
-            'slug': 'how-to-summarize-youtube-video-to-text',
-            'title': 'How to Summarize a YouTube Video to Text — Step by Step Guide 2026',
-            'excerpt': 'Learn how to turn any YouTube video into a text summary in 30 seconds. Step-by-step guide for lectures, podcasts, and tutorials. Free, no sign-up needed.',
-            'date': '2026-06-11',
-            'category': 'Tutorial',
-            'keywords': 'summarize YouTube video to text, YouTube to text summary free, YouTube video summary AI'
+            'slug': 'best-ai-summarizer-online-2026',
+            'title': 'Best AI Summarizer Online in 2026: 5 Free Tools Compared',
+            'excerpt': 'We tested 5 free AI summarizers on PDFs, research papers, and articles. See which tool wins for accuracy, speed, and free tier value in 2026.',
+            'date': '2026-06-12',
+            'category': 'Comparison',
+            'keywords': 'best AI summarizer online, free AI summarizer, AI summarizer tool comparison, best free summarizer 2026'
         }
     ]
     return render_template('blog/index.html', articles=articles)
@@ -613,7 +613,9 @@ def blog_post(slug):
             {'slug': 'ai-note-taking-guide-2026', 'title': 'The Ultimate AI Note-Taking Guide for 2026', 'excerpt': 'Master AI-powered note-taking in 2026 with tools and workflows that save 6+ hours per week.', 'date': '2026-06-07', 'category': 'Trending', 'keywords': ''},
             {'slug': 'ai-multilingual-document-summarization', 'title': 'How to Summarize Documents in Any Language with AI', 'excerpt': 'Break language barriers with AI multilingual document summarization for global teams.', 'date': '2026-06-08', 'category': 'Trending', 'keywords': ''},
             {'slug': 'best-free-ai-pdf-summarizers-2026', 'title': '5 Best Free AI PDF Summarizers in 2026', 'excerpt': 'We tested 5 free AI PDF summarizers on research papers, contracts, and eBooks.', 'date': '2026-06-11', 'category': 'Comparison', 'keywords': ''},
-            {'slug': 'how-to-summarize-youtube-video-to-text', 'title': 'How to Summarize a YouTube Video to Text', 'excerpt': 'Learn how to turn any YouTube video into a text summary in 30 seconds.', 'date': '2026-06-11', 'category': 'Tutorial', 'keywords': ''}
+            {'slug': 'how-to-summarize-youtube-video-to-text', 'title': 'How to Summarize a YouTube Video to Text', 'excerpt': 'Learn how to turn any YouTube video into a text summary in 30 seconds.', 'date': '2026-06-11', 'category': 'Tutorial', 'keywords': ''},
+            {'slug': 'how-to-summarize-article-without-plagiarizing', 'title': 'How to Summarize an Article Without Plagiarizing', 'excerpt': 'Learn 3 proven techniques to summarize articles without plagiarizing.', 'date': '2026-06-10', 'category': 'Writing', 'keywords': ''},
+            {'slug': 'best-ai-summarizer-online-2026', 'title': 'Best AI Summarizer Online in 2026', 'excerpt': 'We tested 5 free AI summarizers on PDFs, research papers, and articles.', 'date': '2026-06-12', 'category': 'Comparison', 'keywords': ''}
         ]), 404
 
 # ── Chinese (/zh/) Pages ──────────────────────────────────────────────
