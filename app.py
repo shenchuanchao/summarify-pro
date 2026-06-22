@@ -570,8 +570,8 @@ def blog_index():
         },
         {
             'slug': 'ai-multilingual-document-summarization',
-            'title': 'How to Summarize Documents in Any Language with AI — The 2026 Guide',
-            'excerpt': 'Break language barriers with AI multilingual document summarization. Learn how global teams summarize PDFs, reports, and research in 5+ languages with near-native accuracy.',
+            'title': 'Summarize Documents in Any Language with AI — No Translation Needed',
+            'excerpt': 'Upload a 50-page report in Japanese, German, or Chinese and get an English summary in 30 seconds. No manual translation required.',
             'date': '2026-06-08',
             'category': 'Trending',
             'keywords': 'multilingual AI summarization, summarize foreign language documents, cross-lingual document summary'
@@ -611,7 +611,7 @@ def blog_post(slug):
             {'slug': 'how-to-read-academic-papers', 'title': 'How to Read Academic Papers Faster with AI', 'excerpt': 'Learn proven techniques to read academic papers 3x faster using AI summarization.', 'date': '2026-06-02', 'category': 'Guide', 'keywords': ''},
             {'slug': 'ai-summarizer-vs-chatgpt', 'title': 'AI Summarizer vs ChatGPT', 'excerpt': 'We compared dedicated AI summarizers against ChatGPT for summarizing PDFs, research papers, and meeting notes.', 'date': '2026-06-05', 'category': 'Comparison', 'keywords': ''},
             {'slug': 'ai-note-taking-guide-2026', 'title': 'The Ultimate AI Note-Taking Guide for 2026', 'excerpt': 'Master AI-powered note-taking in 2026 with tools and workflows that save 6+ hours per week.', 'date': '2026-06-07', 'category': 'Trending', 'keywords': ''},
-            {'slug': 'ai-multilingual-document-summarization', 'title': 'How to Summarize Documents in Any Language with AI', 'excerpt': 'Break language barriers with AI multilingual document summarization for global teams.', 'date': '2026-06-08', 'category': 'Trending', 'keywords': ''},
+            {'slug': 'ai-multilingual-document-summarization', 'title': 'Summarize Documents in Any Language with AI — No Translation Needed', 'excerpt': 'Upload a 50-page report in Japanese, German, or Chinese and get an English summary in 30 seconds.', 'date': '2026-06-08', 'category': 'Trending', 'keywords': ''},
             {'slug': 'best-free-ai-pdf-summarizers-2026', 'title': '5 Best Free AI PDF Summarizers in 2026', 'excerpt': 'We tested 5 free AI PDF summarizers on research papers, contracts, and eBooks.', 'date': '2026-06-11', 'category': 'Comparison', 'keywords': ''},
             {'slug': 'how-to-summarize-youtube-video-to-text', 'title': 'How to Summarize a YouTube Video to Text', 'excerpt': 'Learn how to turn any YouTube video into a text summary in 30 seconds.', 'date': '2026-06-11', 'category': 'Tutorial', 'keywords': ''},
             {'slug': 'how-to-summarize-article-without-plagiarizing', 'title': 'How to Summarize an Article Without Plagiarizing', 'excerpt': 'Learn 3 proven techniques to summarize articles without plagiarizing.', 'date': '2026-06-10', 'category': 'Writing', 'keywords': ''},
