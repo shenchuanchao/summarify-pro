@@ -591,6 +591,30 @@ def blog_index():
             'date': '2026-06-12',
             'category': 'Comparison',
             'keywords': 'best AI summarizer online, free AI summarizer, AI summarizer tool comparison, best free summarizer 2026'
+        },
+        {
+            'slug': 'how-to-summarize-youtube-video-with-ai',
+            'title': 'How to Summarize a YouTube Video with AI in 60 Seconds — Free Guide',
+            'excerpt': 'Learn how to summarize any YouTube video with AI in under 60 seconds. Step-by-step guide for lectures, podcasts, tutorials, and long-form content.',
+            'date': '2026-07-01',
+            'category': 'Tutorial',
+            'keywords': 'summarize YouTube video AI, AI YouTube summarizer free, YouTube video summary tool'
+        },
+        {
+            'slug': 'top-ai-tools-for-students-2026',
+            'title': '7 Best AI Tools for Students in 2026 — Save Hours Every Week',
+            'excerpt': 'Discover the best AI tools for students in 2026. From summarizing research papers to lecture notes, these free and affordable AI tools will transform your study workflow.',
+            'date': '2026-07-02',
+            'category': 'Comparison',
+            'keywords': 'best AI tools for students, AI tools for students 2026, free AI study tools, AI summarizer for students'
+        },
+        {
+            'slug': 'how-to-summarize-long-pdf-documents-free',
+            'title': 'How to Summarize Long PDF Documents for Free — Complete 2026 Guide',
+            'excerpt': 'Learn how to summarize long PDF documents for free using AI. Step-by-step guide for research papers, reports, contracts, and textbooks.',
+            'date': '2026-07-03',
+            'category': 'Guide',
+            'keywords': 'summarize PDF with AI free, AI PDF summarizer online, summarize long documents free, free PDF summarizer 2026'
         }
     ]
     return render_template('blog/index.html', articles=articles)
@@ -615,7 +639,10 @@ def blog_post(slug):
             {'slug': 'best-free-ai-pdf-summarizers-2026', 'title': '5 Best Free AI PDF Summarizers in 2026', 'excerpt': 'We tested 5 free AI PDF summarizers on research papers, contracts, and eBooks.', 'date': '2026-06-11', 'category': 'Comparison', 'keywords': ''},
             {'slug': 'how-to-summarize-youtube-video-to-text', 'title': 'How to Summarize a YouTube Video to Text', 'excerpt': 'Learn how to turn any YouTube video into a text summary in 30 seconds.', 'date': '2026-06-11', 'category': 'Tutorial', 'keywords': ''},
             {'slug': 'how-to-summarize-article-without-plagiarizing', 'title': 'How to Summarize an Article Without Plagiarizing', 'excerpt': 'Learn 3 proven techniques to summarize articles without plagiarizing.', 'date': '2026-06-10', 'category': 'Writing', 'keywords': ''},
-            {'slug': 'best-ai-summarizer-online-2026', 'title': 'Best AI Summarizer Online in 2026', 'excerpt': 'We tested 5 free AI summarizers on PDFs, research papers, and articles.', 'date': '2026-06-12', 'category': 'Comparison', 'keywords': ''}
+            {'slug': 'best-ai-summarizer-online-2026', 'title': 'Best AI Summarizer Online in 2026', 'excerpt': 'We tested 5 free AI summarizers on PDFs, research papers, and articles.', 'date': '2026-06-12', 'category': 'Comparison', 'keywords': ''},
+            {'slug': 'how-to-summarize-youtube-video-with-ai', 'title': 'How to Summarize a YouTube Video with AI in 60 Seconds', 'excerpt': 'Learn how to summarize any YouTube video with AI in under 60 seconds.', 'date': '2026-07-01', 'category': 'Tutorial', 'keywords': ''},
+            {'slug': 'top-ai-tools-for-students-2026', 'title': '7 Best AI Tools for Students in 2026', 'excerpt': 'Discover the best AI tools for students in 2026. Free AI tools for study workflow.', 'date': '2026-07-02', 'category': 'Comparison', 'keywords': ''},
+            {'slug': 'how-to-summarize-long-pdf-documents-free', 'title': 'How to Summarize Long PDF Documents for Free', 'excerpt': 'Learn how to summarize long PDF documents for free using AI.', 'date': '2026-07-03', 'category': 'Guide', 'keywords': ''}
         ]), 404
 
 # ── Chinese (/zh/) Pages ──────────────────────────────────────────────
