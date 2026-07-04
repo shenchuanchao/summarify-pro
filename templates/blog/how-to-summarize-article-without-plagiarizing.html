@@ -211,6 +211,41 @@
 </article>
 
 {% include '_footer.html' %}
-{% include '_scripts.html' %}
+{% include '_modals.html' %}
+<script>
+/* Blog share functions - inline for blog pages that don't load script.js */
+function shareOn(platform) {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent('Summarify Pro - AI Document Summarizer');
+    let shareUrl = '';
+    switch (platform) {
+        case 'twitter':
+            shareUrl = 'https://twitter.com/intent/tweet?url=' + url + '&text=' + text + '&hashtags=AI,Summarizer,Productivity';
+            break;
+        case 'facebook':
+            shareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + url + '&quote=' + text;
+            break;
+        case 'linkedin':
+            shareUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url;
+            break;
+        case 'reddit':
+            shareUrl = 'https://www.reddit.com/submit?url=' + url + '&title=' + text;
+            break;
+        case 'whatsapp':
+            shareUrl = 'https://wa.me/?text=' + text + '%20' + url;
+            break;
+        default: return;
+    }
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+}
+function copyShareLink() {
+    navigator.clipboard.writeText(window.location.href).then(function() {
+        alert('Link copied to clipboard!');
+    }).catch(function() {
+        prompt('Copy this link:', window.location.href);
+    });
+}
+</script>
+
 </body>
 </html>
